@@ -10,10 +10,22 @@
  */
 
 /***************** Header Files ***************/
+
+// standard libraries
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+// web/crawler directories
 #include "webpage.h"
 #include "pagedir.h"
+#include "mem.h"
+
+// data structures
+#include "bag.h"
+#include "hashtable.h"
+
+
 
 /*********** Function Prototypes *************/
 static void parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, int* maxDepth);
@@ -44,10 +56,15 @@ main(int argc, const char* argv[])
    *      max size of pageDirectory = 50 characters
    * 
    */
-  char* seedURL = malloc(50*sizeof(char*));
-  char* pageDirectory = malloc(50*sizeof(char));
+
+  // allocate variables
+  char* seedURL; 
+  char* pageDirectory;
   int maxDepth;
+
+  // parse arguments
   parseArgs(argc, argv, &seedURL, &pageDirectory, &maxDepth);
+  crawl(&seedURL, &pageDirectory, &maxDepth);
   return 0;
 }
 
@@ -55,21 +72,44 @@ static void
 parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, int* maxDepth)
 {
   // parse the URL
-  strcpy(seedURL, argv[1]);
-  normalizeURL(seedURL);
+  *seedURL = normalizeURL(argv[1]);
   if (!isInternalURL(seedURL)) {
-    exit(1);
+    fprintf(stderr, "'%s' is not an internal URL.\n", seedURL);
+    exit(-2);
   }
 
   // parse the page directory
-  strcpy(pageDirectory, argv[2]);
-  pagedir_init(pageDirectory);
+  if (pagedir_init(argv[2])) {
+    *pageDirectory = argv[2];
+  }
+  else {
+    fprintf(stderr, "Invalid page directory.\n");
+    exit(-3);
+  }
 
   // parse maxDepth
-  *maxDepth = atoi(argv[4]);
-  if (maxDepth < 0) {
+  if ( (*maxDepth = atoi(argv[4])) < 0) {
     fprintf(stderr, "max depth cannot be less than ZERO.\n");
-    exit(2);
+    exit(-4);
+  }
+}
+
+static void 
+crawl(char* seedURL, char* pageDirectory, const int maxDepth)
+{
+  hashtable_t* pages_seen = hashtable_new(maxDepth);
+  bag_t* pages_to_crawl = bag_new();
+
+  bag_insert(pages_to_crawl, seedURL);
+  hashtable_insert(pages_seen, 0, seedURL);
+
+  char* url = mem_malloc(1+sizeof(seedURL));
+  int depth = 0;
+  while( (url = bag_extract(pages_to_crawl)) != NULL) {
+
+    webpage_t* webpage = webpage_new(url, depth, NULL);
+
+
   }
 }
 

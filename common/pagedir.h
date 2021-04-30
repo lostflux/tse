@@ -9,3 +9,5 @@
  * 
  */
 
+
+bool pagedir_init(char* pageDir);

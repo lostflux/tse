@@ -11,14 +11,21 @@
 
 /************** Header Files ****************/
 #include "webpage.h"
+#include "pagedir.h"
 
 
 /************ Function Prototypes ***********/
-bool pagedir_init(char* pageDir);
 
 
 bool 
 pagedir_init(char* pageDir)
 {
-  
+  char* crawlerConfig;
+  FILE* fp;
+  sprintf(crawlerConfig, "%s/.crawler", pageDir);
+  if ( (fp = fopen(crawlerConfig, "w") ) != NULL) {
+    fclose(fp);
+    return true;
+  }
+  return false;
 }
