@@ -13,9 +13,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "webpage.h"
 #include "pagedir.h"
-
+#include "mem.h"
 
 /************ Function Prototypes ***********/
 // void pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID);
@@ -41,7 +42,7 @@ void
 pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID)
 {
   printf("Inside pagedir_save()\n");
-  char filepath[sizeof(pageDirectory)+10];
+  char filepath[strlen(pageDirectory) + 10];
   FILE* fp;
   sprintf(filepath, "%s/%d", pageDirectory, docID);
   if ( (fp = fopen(filepath, "w") ) != NULL) {

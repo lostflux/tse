@@ -41,11 +41,7 @@ main(const int argc, char* argv[])
   /* code */
   char* usage = "./crawler seedURL pageDirectory maxDepth";
 
-  // temporary test
-  if (argc == 1) {
-    char* seedURL; 
-    char* pageDirectory;
-    int maxDepth;
+  #ifdef QUICKTEST
 
     char* testArguments[4];
     testArguments[0] = "./crawler";
@@ -53,11 +49,19 @@ main(const int argc, char* argv[])
     testArguments[2] = "../data/output/letters-10";
     testArguments[3] = "10";
 
+    char** seedURL = mem_calloc(strlen(testArguments[1]), sizeof(char)); 
+    char** pageDirectory = mem_calloc(strlen(testArguments[2]), sizeof(char));
+    int maxDepth;
+
     // parse arguments
-    parseArgs(argc, testArguments, &seedURL, &pageDirectory, &maxDepth);
-    crawl(seedURL, pageDirectory, maxDepth);
+    parseArgs(argc, testArguments, seedURL, pageDirectory, &maxDepth);
+    crawl(*seedURL, *pageDirectory, maxDepth);
+
+    // free seedURL and pageDirectory
+    free(seedURL);
+    free(pageDirectory);
     return 0;
-  }
+  #endif
 
   if (argc < 4) {
     fprintf(stderr, "Incorrect usage: too few arguments!\n");
@@ -70,13 +74,17 @@ main(const int argc, char* argv[])
     exit(-1);
   }
 
-  char* seedURL; 
-  char* pageDirectory;
+  char** seedURL = mem_calloc(strlen(argv[1]), sizeof(char)); 
+  char** pageDirectory = mem_calloc(strlen(argv[2]), sizeof(char));
   int maxDepth;
 
   // parse arguments
-  parseArgs(argc, argv, &seedURL, &pageDirectory, &maxDepth);
-  crawl(seedURL, pageDirectory, maxDepth);
+  parseArgs(argc, argv, seedURL, pageDirectory, &maxDepth);
+  crawl(*seedURL, *pageDirectory, maxDepth);
+
+  // free seedURL and pageDirectory
+  free(seedURL);
+  free(pageDirectory);
   return 0;
 }
 
@@ -88,6 +96,8 @@ parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, in
   *seedURL = normalizeURL(argv[1]);
   if (!isInternalURL(*seedURL)) {
     fprintf(stderr, "'%s' is not an internal URL.\n", *seedURL);
+    mem_free(seedURL);
+    mem_free(pageDirectory);
     exit(-2);
   }
 
@@ -97,6 +107,8 @@ parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, in
   }
   else {
     fprintf(stderr, "Invalid page directory.\n");
+    mem_free(seedURL);
+    mem_free(pageDirectory);
     exit(-3);
   }
 
@@ -135,7 +147,7 @@ crawl(char* seedURL, char* pageDirectory, const int maxDepth)
   webpage_t* page;
 
   // loop until bag of pages to visit is empty...
-  while( (page = bag_extract(pages_to_crawl)) != NULL) {
+  while((page = bag_extract(pages_to_crawl)) != NULL) {  
 
     /*
      * if fetch html of current page succeeds, 
@@ -146,23 +158,18 @@ crawl(char* seedURL, char* pageDirectory, const int maxDepth)
       // #ifdef DEBUG
       printf("Fetched: %s\n", webpage_getURL(page));
       // #endif
-      pagedir_save(page, pageDirectory, documentID);
-      documentID++;
+      pagedir_save(page, pageDirectory, documentID++);
+      
+      /*
+      * if page is not at maxDepth, 
+      * scan the page for more links to visit
+      */
+      if (webpage_getDepth(page) < maxDepth) {
+        pageScan(page, pages_to_crawl, pages_seen);
+      }
     }
     else {
       fprintf(stderr, "Webpage fetch failed!\n");
-    }
-
-    /*
-     * if page is not at maxDepth, 
-     * scan the page for more links to visit
-     */
-
-    if (webpage_getDepth(page) < maxDepth) {
-      pageScan(page, pages_to_crawl, pages_seen);
-    }
-    else {
-      printf("exited\n");
     }
 
     // delete current page
@@ -173,7 +180,7 @@ crawl(char* seedURL, char* pageDirectory, const int maxDepth)
   hashtable_delete(pages_seen, NULL);
 
   // delete bag
-  bag_delete(pages_to_crawl, webpage_delete);
+  bag_delete(pages_to_crawl, NULL);
 }
 
 
@@ -196,12 +203,20 @@ pageScan(webpage_t* page, bag_t* pages_to_crawl, hashtable_t* pages_seen)
       if (hashtable_insert(pages_seen, url, "")) {
 
         int depth = webpage_getDepth(page);
+
+        // char* dubbedURL = mem_malloc(sizeof(url));
+        // strcpy(dubbedURL, url);
         webpage_t* next_page = webpage_new(url, depth+1, NULL);
         bag_insert(pages_to_crawl, next_page);
         printf("Inserted: %s\n", url);
       }
+      else {
+        free(url);
+      }
     }
-    free(url);
+    else {
+      free(url);
+    }
   }
 }
 
