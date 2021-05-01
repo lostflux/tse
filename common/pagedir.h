@@ -10,4 +10,5 @@
  */
 
 
-bool pagedir_init(char* pageDir);
+void pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID);
+bool pagedir_init(const char* pageDirectory);
