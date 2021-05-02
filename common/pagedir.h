@@ -8,6 +8,9 @@
  * @copyright Copyright (c) 2021
  */
 
+#ifndef __PAGEDIR_H
+
+#define __PAGEDIR_H
 /**
  * @function: pagedir_save
  * @brief: saves a given webpage's reference (link and depth) 
@@ -35,3 +38,5 @@ void pagedir_save(const webpage_t* page, const char* pageDirectory, const int do
  * @return false: initialization failure 
  */
 bool pagedir_init(const char* pageDirectory);
+
+#endif /*__PAGEDIR_H */
