@@ -16,7 +16,7 @@ This crawler expects the following commandline arguments:
 
 ### Functionality
 
-The crawler runs a [Breadth-First Search](https://en.wikipedia.org/wiki/Depth-first_search) from the seed URL, identifying and saving webpages that fit a pre-specified criterion. The idea is to later be able to index the saved directories, query, and find webpages.
+The crawler runs a [Depth-First Search](https://en.wikipedia.org/wiki/Depth-first_search) from the seed URL, identifying and saving webpages that fit a pre-specified criterion. The idea is to later be able to index the saved directories, query, and find webpages.
 
 To build, run `make`.
 
