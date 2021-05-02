@@ -28,7 +28,6 @@
 #include "pagedir.h"
 
 
-
 /*********** Function Prototypes *************/
 
 /**
@@ -43,6 +42,7 @@ static void pageScan(webpage_t* page, bag_t* pagesToCrawl, hashtable_t* pagesSee
 
 static void logr(const char *word, const int depth, const char *url);
 
+
 /************* GLOBAL CONSTANTS ***************/
 // These flags are used to provide exit statuses in the various functions in this file.
 const int SUCCESS = 0;
@@ -51,7 +51,18 @@ const int EXTERNAL_URL = 1;
 const int INVALID_DIRECTORY = 2;
 
 
-
+/**
+ * @function: main
+ * @brief: primary function that receives commandline arguments 
+ * and calls relevant secondary functions where necessary.
+ * 
+ * Inputs:
+ * @param argc: argument count. 
+ * @param argv: argument vector.
+ * 
+ * Returns:
+ * @return int: an exit status depending on success or errors (see "GLOBAL CONSTANTS" section).
+ */
 int 
 main(const int argc, char* argv[])
 {
