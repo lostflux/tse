@@ -2,17 +2,30 @@
 #
 # Amittai J. Wekesa, April 2021
 
+# Flag to print crawler progress
+TESTFLAGS=-DAPPTEST
 
+# Standard flags 
 CC = gcc
 CFLAGS = -Wall -pedantic -std=c11 -ggdb -I ../libcs50 -I ../common
+
+# Program name
 PROG = crawler
+
+# Objects
 OBJS = crawler.o
+
+# Libraries
 LLIBS = ../libcs50/libcs50-given.a ../common/common.a
 
 
-all: crawler ../common/common.a
+# for memory-leak tests
+VALGRIND = valgrind --leak-check=full --show-leak-kinds=all 
 
-crawler: $(OBJS) $(LLIBS)	
+
+all: $(PROG) $(LLIBS)
+
+$(PROG): $(OBJS) $(LLIBS) 	
 	$(CC) $(CFLAGS) $^ -o $@
 
 # crawler.o: crawler.c $(LIBS)
@@ -23,14 +36,14 @@ crawler: $(OBJS) $(LLIBS)
 
 .PHONY: clean test valgrind clean
 
-test:
-	make all
+test: crawler.c $(LLIBS) 
+	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o crawler
 	bash -v ./testing.sh
 
 clean:
 	rm -f core *core.*
 	rm -f $(PROG) *~ *.o
 
-valgrind:
-	valgrind ./crawler http://cs50tse.cs.dartmouth.edu/tse/ output/letters-depth-6 6
-
+valgrind: crawler.c $(LLIBS) 
+	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o crawler
+	$(VALGRIND) ./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/ ../data/output/valgrind 10

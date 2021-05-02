@@ -69,27 +69,6 @@ main(const int argc, char* argv[])
   /* code */
   char* usage = "./crawler seedURL pageDirectory maxDepth";
 
-  #ifdef QUICKTEST
-    char* testArguments[4];
-    testArguments[0] = "./crawler";
-    testArguments[1] = "http://cs50tse.cs.dartmouth.edu/tse/letters/";
-    testArguments[2] = "../data/output/letters-10";
-    testArguments[3] = "10";
-
-    char** seedURL = mem_calloc(strlen(testArguments[1]), sizeof(char)); 
-    char** pageDirectory = mem_calloc(strlen(testArguments[2]), sizeof(char));
-    int maxDepth;
-
-    // parse arguments
-    parseArgs(argc, testArguments, seedURL, pageDirectory, &maxDepth);
-    crawl(*seedURL, *pageDirectory, maxDepth);
-
-    // free seedURL and pageDirectory
-    free(seedURL);
-    free(pageDirectory);
-    return 0;
-  #endif
-
   // validate that required number of arguments was provided.
   if (argc < 4) {
     fprintf(stderr, "Incorrect usage: too few arguments!\n");
@@ -311,9 +290,9 @@ pageScan(webpage_t* page, bag_t* pages_to_crawl, hashtable_t* pages_seen)
  */                                  
 static void logr(const char *word, const int depth, const char *url)
 {
-  // #ifdef APPTEST
-    printf("%2d %*s%9s: %s\n", depth, depth, "", word, url);
-  // #else
-  // ;
-  // #endif
+#ifdef APPTEST
+  printf("%2d %*s%9s: %s\n", depth, depth, "", word, url);
+#else
+  ;
+#endif
 }
