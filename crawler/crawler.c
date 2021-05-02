@@ -1,7 +1,7 @@
 /**
  * @file: crawler.c
  * @author: Amittai J. Wekesa (@siavava)
- * @brief: File containing functionality of crawler for Tiny Search Engine
+ * @brief: crawler functionality for TSE
  * @version: 0.1
  * @date: 2021-04-28
  * 
@@ -16,22 +16,39 @@
 #include <stdlib.h>
 #include <string.h>
 
-// web/crawler directories
-#include "webpage.h"
-#include "pagedir.h"
-#include "mem.h"
-// #include "crawler.h"
-
 // data structures
 #include "bag.h"
 #include "hashtable.h"
+#include "webpage.h"
+
+// memory library
+#include "mem.h"
+
+// TSE libraries
+#include "pagedir.h"
 
 
 
 /*********** Function Prototypes *************/
+
+/**
+ * @brief: see function definitions for documentation of functionality and behavior. 
+ */
+
 static void parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, int* maxDepth);
+
 static void crawl(char* seedURL, char* pageDirectory, const int maxDepth);
+
 static void pageScan(webpage_t* page, bag_t* pagesToCrawl, hashtable_t* pagesSeen);
+
+static void logr(const char *word, const int depth, const char *url);
+
+/************* GLOBAL CONSTANTS ***************/
+// These flags are used to provide exit statuses in the various functions in this file.
+const int SUCCESS = 0;
+const int INCORRECT_USAGE = -1;
+const int EXTERNAL_URL = 1;
+const int INVALID_DIRECTORY = 2;
 
 
 
@@ -42,7 +59,6 @@ main(const int argc, char* argv[])
   char* usage = "./crawler seedURL pageDirectory maxDepth";
 
   #ifdef QUICKTEST
-
     char* testArguments[4];
     testArguments[0] = "./crawler";
     testArguments[1] = "http://cs50tse.cs.dartmouth.edu/tse/letters/";
@@ -63,32 +79,57 @@ main(const int argc, char* argv[])
     return 0;
   #endif
 
+  // validate that required number of arguments was provided.
   if (argc < 4) {
     fprintf(stderr, "Incorrect usage: too few arguments!\n");
     fprintf(stderr, "Usage: %s\n", usage);
-    exit(-1);
+    exit(INCORRECT_USAGE);
   }
   else if (argc > 4) {
     fprintf(stderr, "Incorrect usage: too many arguments!\n");
     fprintf(stderr, "Usage: %s\n", usage);
-    exit(-1);
+    exit(INCORRECT_USAGE);
   }
 
+  // allocate memory for seed URL and page directory
   char** seedURL = mem_calloc(strlen(argv[1]), sizeof(char)); 
   char** pageDirectory = mem_calloc(strlen(argv[2]), sizeof(char));
+
+  // initialize max depth (no need to alloc)
   int maxDepth;
 
   // parse arguments
   parseArgs(argc, argv, seedURL, pageDirectory, &maxDepth);
+
+  // crawl
   crawl(*seedURL, *pageDirectory, maxDepth);
 
   // free seedURL and pageDirectory
   free(seedURL);
   free(pageDirectory);
-  return 0;
+  return SUCCESS;
 }
 
 
+/**
+ * @function: parseArgs
+ * @brief: processes and validates commandline arguments.
+ * IF valid, stores them to memory locations provided by the caller.
+ * parseArgs performs no internal memory allocs.
+ *
+ * DISCLAIMER: 
+ * parseArgs expects passed arguments "seedURL" and "pageDirectory" to point to malloc'ed memory.
+ * In case of an error, parseArgs frees these two pointers before exiting.
+ * Passing in non-malloc'ed memory will cause segmentation
+ * faults IF parseArgs encounters an exit condition.
+ * 
+ * Inputs:
+ * @param argc: commandline argument count 
+ * @param argv: commandline argument vector 
+ * @param seedURL: pointer to (malloc'ed) memory location to save seed URL 
+ * @param pageDirectory: pointer to (malooc'ed) memory location to save page directory 
+ * @param maxDepth: pointer to statically-allocated (non-malloc'ed) memory location to save max depth
+ */
 static void 
 parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, int* maxDepth)
 {
@@ -98,7 +139,7 @@ parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, in
     fprintf(stderr, "'%s' is not an internal URL.\n", *seedURL);
     mem_free(seedURL);
     mem_free(pageDirectory);
-    exit(-2);
+    exit(EXTERNAL_URL);
   }
 
   // parse the page directory
@@ -109,17 +150,29 @@ parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, in
     fprintf(stderr, "Invalid page directory.\n");
     mem_free(seedURL);
     mem_free(pageDirectory);
-    exit(-3);
+    exit(INVALID_DIRECTORY);
   }
 
   // parse maxDepth
   if ( (*maxDepth = atoi(argv[3])) < 0) {
     fprintf(stderr, "max depth cannot be less than ZERO.\n");
+    mem_free(seedURL);
+    mem_free(pageDirectory);
     exit(-4);
   }
 }
 
-
+/**
+ * @function: crawl
+ * @brief: runs a depth-first search on webpage.
+ * Finds links in start page and follows them to a specified depth limit,
+ * indexing all encountered webpages if they fit a specified criterion. 
+ * 
+ * Inputs:
+ * @param seedURL: start URL 
+ * @param pageDirectory: directory to save crawl results 
+ * @param maxDepth: highest depth to crawl 
+ */
 static void 
 crawl(char* seedURL, char* pageDirectory, const int maxDepth)
 {
@@ -155,14 +208,15 @@ crawl(char* seedURL, char* pageDirectory, const int maxDepth)
      */ 
     if (webpage_fetch(page)) {
 
-      // #ifdef DEBUG
-      printf("Fetched: %s\n", webpage_getURL(page));
-      // #endif
+      
+      logr("Fetched", webpage_getDepth(page), webpage_getURL(page));
+      
       pagedir_save(page, pageDirectory, documentID++);
+      logr("Saved", webpage_getDepth(page), webpage_getURL(page));
       
       /*
       * if page is not at maxDepth, 
-      * scan the page for more links to visit
+      * scan the page for more links to crawl
       */
       if (webpage_getDepth(page) < maxDepth) {
         pageScan(page, pages_to_crawl, pages_seen);
@@ -183,40 +237,72 @@ crawl(char* seedURL, char* pageDirectory, const int maxDepth)
   bag_delete(pages_to_crawl, NULL);
 }
 
-
-
+/**
+ * @function: pageScan
+ * @brief: Scans a webpage for outward links, 
+ * validates and normalizes them,
+ * then adds them to the the visit queue.
+ * 
+ * Inputs:
+ * @param page: current page
+ * @param pagesToCrawl: bag containing pages to be visited 
+ * @param pagesSeen: hashtable containing pages seen (no duplicates!) 
+ */
 static void
 pageScan(webpage_t* page, bag_t* pages_to_crawl, hashtable_t* pages_seen)
 {
-  printf("Scanning: %s\n", webpage_getURL(page));
+  logr("Scanning", webpage_getDepth(page), webpage_getURL(page));
   // variable to track position in page
   int pos = 0;
 
   // reference to returned URL
-  char* url;
-  while ((url = webpage_getNextURL(page, &pos)) != NULL) {
+  char* rawURL;
+  while ((rawURL = webpage_getNextURL(page, &pos)) != NULL) {
+
+    // Get normalized URL
+    char* url = normalizeURL(rawURL);
+
+    // Free raw URL
+    free(rawURL);
+
     // if URL is internal
     if (isInternalURL(url)) {
-      printf("Found: %s\n", url);
+      logr("Found", webpage_getDepth(page)+1, url);
 
       // if successfully entered into pages seen
       if (hashtable_insert(pages_seen, url, "")) {
 
         int depth = webpage_getDepth(page);
 
-        // char* dubbedURL = mem_malloc(sizeof(url));
-        // strcpy(dubbedURL, url);
         webpage_t* next_page = webpage_new(url, depth+1, NULL);
         bag_insert(pages_to_crawl, next_page);
-        printf("Inserted: %s\n", url);
+        logr("Queued", webpage_getDepth(page)+1, url);
       }
       else {
+        logr("IgnDupl", webpage_getDepth(page)+1, url);
         free(url);
       }
     }
     else {
+      logr("IgnExtrn", webpage_getDepth(page)+1, url);
       free(url);
     }
   }
 }
 
+/**
+ * @function: logr -- as provided by Prof. David Kotz
+ * @brief: logs crawler progress IF a specified flag is switched on. 
+ * 
+ * @param word: current operation 
+ * @param depth: page depth 
+ * @param url: page URL 
+ */                                  
+static void logr(const char *word, const int depth, const char *url)
+{
+  // #ifdef APPTEST
+    printf("%2d %*s%9s: %s\n", depth, depth, "", word, url);
+  // #else
+  // ;
+  // #endif
+}

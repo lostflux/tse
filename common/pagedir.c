@@ -10,18 +10,25 @@
  */
 
 /************** Header Files ****************/
+// standard libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "webpage.h"
-#include "pagedir.h"
+
+// memory
 #include "mem.h"
 
-/************ Function Prototypes ***********/
-// void pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID);
-// bool pagedir_init(const char* pageDirectory);
+// data structures
+#include "webpage.h"
 
+// self
+#include "pagedir.h"
+
+
+/**
+ * @brief see pagedir.h for documentation
+ */
 bool 
 pagedir_init(const char* pageDirectory)
 {
@@ -38,10 +45,12 @@ pagedir_init(const char* pageDirectory)
   return false;
 }
 
+/**
+ * @brief see pagedir.h for documentation
+ */
 void
 pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID)
 {
-  printf("Inside pagedir_save()\n");
   char filepath[strlen(pageDirectory) + 10];
   FILE* fp;
   sprintf(filepath, "%s/%d", pageDirectory, docID);
@@ -57,11 +66,10 @@ pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID)
     fprintf(fp, "%d\n", depth);
     fprintf(fp, "%s\n", html);
 
-    // close the file and return true
-    printf("Saved: %s\n", filepath);
+    // close the file
     fclose(fp);
   }
   else {
-    fprintf(stdout, "Error opening path: '%s'", filepath);
+    fprintf(stderr, "Error opening path: '%s'", filepath);
   }
 }
