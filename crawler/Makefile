@@ -19,8 +19,6 @@ OBJS = crawler.o
 LLIBS = ../libcs50/libcs50-given.a ../common/common.a
 
 
-# for memory-leak tests
-VALGRIND = valgrind --leak-check=full --show-leak-kinds=all 
 
 
 all: $(PROG) $(LLIBS)
@@ -46,4 +44,5 @@ clean:
 
 valgrind: crawler.c $(LLIBS) 
 	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o crawler
-	$(VALGRIND) ./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/ ../data/output/valgrind 10
+	
+	bash -v valgrind.sh
