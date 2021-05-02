@@ -46,9 +46,10 @@ static void logr(const char *word, const int depth, const char *url);
 /************* GLOBAL CONSTANTS ***************/
 // These flags are used to provide exit statuses in the various functions in this file.
 const int SUCCESS = 0;
-const int INCORRECT_USAGE = -1;
-const int EXTERNAL_URL = 1;
-const int INVALID_DIRECTORY = 2;
+const int INCORRECT_USAGE = 1;
+const int EXTERNAL_URL = 2;
+const int INVALID_DIRECTORY = 3;
+const int INVALID_DEPTH = 4;
 
 
 /**
@@ -81,9 +82,9 @@ main(const int argc, char* argv[])
     exit(INCORRECT_USAGE);
   }
 
-  // allocate memory for seed URL and page directory
-  char** seedURL = mem_calloc(strlen(argv[1]), sizeof(char)); 
-  char** pageDirectory = mem_calloc(strlen(argv[2]), sizeof(char));
+  // allocate memory for seed URL and page directory, assert memory alloc was successful.
+  char** seedURL = mem_calloc_assert(strlen(argv[1]), sizeof(char), "Error allocating seedURL"); 
+  char** pageDirectory = mem_calloc_assert(strlen(argv[2]), sizeof(char), "Error allocating pageDirectory");
 
   // initialize max depth (no need to alloc)
   int maxDepth;
@@ -95,8 +96,8 @@ main(const int argc, char* argv[])
   crawl(*seedURL, *pageDirectory, maxDepth);
 
   // free seedURL and pageDirectory
-  free(seedURL);
-  free(pageDirectory);
+  mem_free(seedURL);
+  mem_free(pageDirectory);
   return SUCCESS;
 }
 
@@ -148,7 +149,7 @@ parseArgs(const int argc, char* argv[], char** seedURL, char** pageDirectory, in
     fprintf(stderr, "max depth cannot be less than ZERO.\n");
     mem_free(seedURL);
     mem_free(pageDirectory);
-    exit(-4);
+    exit(INVALID_DEPTH);
   }
 }
 
@@ -253,7 +254,7 @@ pageScan(webpage_t* page, bag_t* pages_to_crawl, hashtable_t* pages_seen)
     char* url = normalizeURL(rawURL);
 
     // Free raw URL
-    free(rawURL);
+    mem_free(rawURL);
 
     // if URL is internal
     if (isInternalURL(url)) {
@@ -270,12 +271,12 @@ pageScan(webpage_t* page, bag_t* pages_to_crawl, hashtable_t* pages_seen)
       }
       else {
         logr("IgnDupl", webpage_getDepth(page)+1, url);
-        free(url);
+        mem_free(url);
       }
     }
     else {
       logr("IgnExtrn", webpage_getDepth(page)+1, url);
-      free(url);
+      mem_free(url);
     }
   }
 }
