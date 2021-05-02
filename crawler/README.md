@@ -22,6 +22,8 @@ The crawler runs a [Depth-First Search](https://en.wikipedia.org/wiki/Depth-firs
 
 ***
 
+### Usage
+
 To build, run `make`.
 
 To clean up, run `make clean`.
