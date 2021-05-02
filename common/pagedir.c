@@ -1,7 +1,7 @@
 /**
  * @file pagedir.c
- * @author your name (you@domain.com)
- * @brief 
+ * @author Amittai J. Wekesa (@siavava)
+ * @brief: directory I/O functionality. 
  * @version 0.1
  * @date 2021-04-29
  * 
