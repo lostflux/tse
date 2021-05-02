@@ -30,8 +30,4 @@ To test the crawler module, run `make test`. Output from previous tests is avail
 
 To test memory usage, run `make valgrind`. Output from previous tests is available in teh *valgrind.out* file, generated from *valgrind.sh*.
 
-<span style="color:red">
-
-Note: the testing scripts (*testing.sh* and *valgrind.sh*) anticipate the existence of a `./data/output/[FOLDER]` location where `[FOLDER]` is a folder named in the fashion `seedURL-maxDepth` (for example, "letters-0", "letters-10", "wikipedia-1", etc.). **Please make sure those folders exist before using the testing scripts; they will not work elsewhile.**
-
-</span>
+<span style="color:red"> Note: the testing scripts (*testing.sh* and *valgrind.sh*) anticipate the existence of a `./data/output/[FOLDER]` location where `[FOLDER]` is a folder named in the fashion `seedURL-maxDepth` (for example, `letters-0`, `letters-10`, `wikipedia-1`, etc.). **Please make sure those folders exist before using the testing scripts; they will not work elsewhile.**</span>
