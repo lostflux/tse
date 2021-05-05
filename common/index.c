@@ -87,7 +87,7 @@ static void
 printCounts(FILE* fp, char* key, int count)
 {
   if (fp != NULL) {
-    fprintf(fp, " %d %d ", key, count);
+    fprintf(fp, " %d %d", key, count);
   }
 }
 

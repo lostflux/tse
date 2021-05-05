@@ -92,6 +92,7 @@ pagedir_check(char* dirName)
 
   FILE* fp;
   if ((fp = fopen(fullpath, "r")) != NULL) {
+    fclose(fp);
     mem_free(fullpath);
     return true;
   }
@@ -112,6 +113,8 @@ pagedir_load(char* filepath)
     mem_free(pageDepth);
 
     char* html = file_readUntil(fp, NULL);
+
+    fclose(fp);
 
     return webpage_new(url, depth, html);
   }
