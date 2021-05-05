@@ -45,11 +45,11 @@ static void logr(const char *word, const int depth, const char *url);
 
 /************* GLOBAL CONSTANTS ***************/
 // These flags are used to provide exit statuses in the various functions in this file.
-const int SUCCESS = 0;
-const int INCORRECT_USAGE = 1;
-const int EXTERNAL_URL = 2;
-const int INVALID_DIRECTORY = 3;
-const int INVALID_DEPTH = 4;
+static const int SUCCESS = 0;
+static const int INCORRECT_USAGE = 1;
+static const int EXTERNAL_URL = 2;
+static const int INVALID_DIRECTORY = 3;
+static const int INVALID_DEPTH = 4;
 
 
 /**

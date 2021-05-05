@@ -17,6 +17,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+// file IO
+#include "file.h"
+
 // memory
 #include "mem.h"
 
@@ -74,3 +77,44 @@ pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID)
     fprintf(stderr, "Error opening path: '%s'", filepath);
   }
 }
+
+bool
+pagedir_check(char* dirName)
+{
+  char* fullpath = mem_malloc_assert(strlen(dirName)+7, "full path alloc failed");
+
+  if (dirName[strlen(dirName)-1] == '/') {
+    sprintf(fullpath, "%s.crawler", dirName);
+  }
+  else {
+    sprintf(fullpath, "%s/.crawler", dirName);
+  }
+
+  FILE* fp;
+  if ((fp = fopen(fullpath, "r")) != NULL) {
+    mem_free(fullpath);
+    return true;
+  }
+  fprintf(stderr, "'%s' is not a valid crawler directory.", dirName);
+  mem_free(fullpath);
+  return false;
+}
+
+webpage_t*
+pagedir_load(char* filepath)
+{
+  FILE* fp;
+  if ((fp = fopen(filepath, "r")) != NULL) {
+    char* url = file_readLine(fp);
+
+    char* pageDepth = file_readline(fp);
+    int depth = atoi(depth);
+    mem_free(pageDepth);
+
+    char* html = file_readUntil(fp, NULL);
+
+    return webpage_new(url, depth, html);
+  }
+  return NULL;
+}
+

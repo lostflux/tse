@@ -11,6 +11,12 @@
 #ifndef __PAGEDIR_H
 
 #define __PAGEDIR_H
+
+#include <stdbool.h>
+#include "webpage.h"
+
+// typedef struct webpage webpage_t;
+
 /**
  * @function: pagedir_save
  * @brief: saves a given webpage's reference (link and depth) 
@@ -38,5 +44,9 @@ void pagedir_save(const webpage_t* page, const char* pageDirectory, const int do
  * @return false: initialization failure 
  */
 bool pagedir_init(const char* pageDirectory);
+
+bool pagedir_check(char* dirName);
+
+webpage_t* pagedir_load(char* filepath);
 
 #endif /*__PAGEDIR_H */
