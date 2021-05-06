@@ -108,8 +108,8 @@ pagedir_load(char* filepath)
   if ((fp = fopen(filepath, "r")) != NULL) {
     char* url = file_readLine(fp);
 
-    char* pageDepth = file_readline(fp);
-    int depth = atoi(depth);
+    char* pageDepth = file_readLine(fp);
+    int depth = atoi(pageDepth);
     mem_free(pageDepth);
 
     char* html = file_readUntil(fp, NULL);

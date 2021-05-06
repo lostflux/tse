@@ -21,7 +21,6 @@
 #include "index.h"
 #include "word.h"
 
-#include <regex.h>
 
 /************** Function Prototypes ***************/
 static void parseArgs(const char* argv[], char** pageDirectory, char** indexFileName);
@@ -46,27 +45,34 @@ main(int argc, const char* argv[])
 
   char* pageDirectory = mem_malloc_assert(sizeof(argv[1]), "Memory allocation for pageDirectory failed!");
   char* indexFileName = mem_malloc_assert(sizeof(argv[2]), "Memory allocation for indexFileName failed!");
-  parseArgs(argv, pageDirectory, indexFileName);
+  parseArgs(argv, &pageDirectory, &indexFileName);
 
   
   index_t* index = index_new();
   indexBuild(pageDirectory, index);
+
+  FILE* fp = fopen(indexFileName, "w");
+  index_print(index, fp);
+  fclose(fp);
+  index_delete(index);
+
+  return 0;
 }
 
 static void
 parseArgs(const char* argv[], char** pageDirectory, char** indexFileName)
 {
-  *pageDirectory = argv[1];
-  if (!pagedir_check(pageDirectory)) {    
+  strcpy(*pageDirectory, argv[1]);
+  if (!pagedir_check(*pageDirectory)) {    
     fprintf(stderr, "Invalid page directory.\n");
     mem_free(pageDirectory);
     mem_free(indexFileName);
     exit(-1);
   }
 
-  *indexFileName = argv[2];
+  strcpy(*indexFileName, argv[2]);
   FILE* fp;
-  if ((fp = fopen(indexFileName, "w")) == NULL) {
+  if ((fp = fopen(*indexFileName, "w")) == NULL) {
     fprintf(stderr, "Invalid index file name and/or directory.\n");
     mem_free(pageDirectory);
     mem_free(indexFileName);
@@ -82,10 +88,10 @@ indexBuild(const char* pageDirectory, index_t* index)
   for(int docID=1; ; docID++) {
 
     if (pageDirectory[strlen(pageDirectory)-1] == '/') {
-      sprintf(directory, "%s%d", pageDirectory, index);
+      sprintf(directory, "%s%d", pageDirectory, docID);
     }
     else {
-      sprintf(directory, "%s/%d", pageDirectory, index);
+      sprintf(directory, "%s/%d", pageDirectory, docID);
     }
 
     webpage_t* page;

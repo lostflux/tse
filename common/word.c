@@ -21,10 +21,13 @@
 static int 
 normalizeChar(int c)
 {
+  int norm;
   switch (isupper(c)) {
-    case 0: return c;
-    case 1: return tolower(c);
-  };
+    case 0: norm = c;
+    case 1: norm = tolower(c);
+  }
+
+  return norm;
 }
 
 void

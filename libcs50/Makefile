@@ -19,12 +19,19 @@ $(LIB): $(OBJS)
 
 # Dependencies: object files depend on header files
 bag.o: bag.h
-counters.o: counters.h
+
+counters.o:	counters.h
+
 file.o: file.h
-hashtable.o: hashtable.h set.h hash.h 
+
+hashtable.o: hashtable.h set.h hash.h
+
 hash.o: hash.h
+
 mem.o: mem.h
+
 set.o: set.h
+
 webpage.o:  webpage.h
 
 .PHONY: clean sourcelist

@@ -18,9 +18,6 @@ OBJS = crawler.o
 # Libraries
 LLIBS = ../libcs50/libcs50-given.a ../common/common.a
 
-
-
-
 all: $(PROG) $(LLIBS)
 
 $(PROG): $(OBJS) $(LLIBS) 	

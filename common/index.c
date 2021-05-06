@@ -20,15 +20,16 @@
 #include "index.h"
 
 /**************** Function Prototypes ********************/
-index_t* index_new();
-void index_insert(index_t* index, char* word, int docID);
-void index_iterate(index_t* index, void* arg, void (*itemfunc)(void* arg, const char* key, void* item));
-void index_delete(index_t* index);
+// index_t* index_new();
+// void index_insert(index_t* index, char* word, int docID);
+// void index_iterate(index_t* index, void* arg, void (*itemfunc)(void* arg, const char* key, void* item));
+// void index_delete(index_t* index);
 
 // Functions to print indexes
-void index_print (index_t* index, FILE* fp);
-static void printWord(FILE* fp, char* key, void* item);
-static void printCounts(FILE* fp, char* key, int count);
+// void index_print (index_t* index, FILE* fp);
+/************* Static functions **************/
+static void printWord(void* arg, const char* key, void* item);
+static void printCounts(void* arg, int key, int count);
 
 
 
@@ -45,6 +46,7 @@ index_new()
 {
   index_t* index = mem_malloc_assert(sizeof(index_t), "mem alloc for index failed.");
   index->ht = hashtable_new(20);
+  return index;
 }
 
 void
@@ -77,27 +79,38 @@ void (*itemfunc)(void* arg, const char* key, void* item))
 }
 
 void 
+deleteCounter(void* arg)
+{
+  counters_t* ctrs = (counters_t*) arg;
+  counters_delete(ctrs);
+}
+
+void 
 index_delete(index_t* index)
 {
-  hashtable_delete(index->ht, counters_delete);
+  hashtable_delete(index->ht, deleteCounter);
   mem_free(index);
 }
 
 static void
-printCounts(FILE* fp, char* key, int count)
+printCounts(void* arg, int key, int count)
 {
+  FILE* fp = (FILE*) arg;
   if (fp != NULL) {
     fprintf(fp, " %d %d", key, count);
   }
 }
 
 static void
-printWord(FILE* fp, char* key, void* item)
+printWord(void* arg, const char* key, void* item)
 {
-  fprintf(fp, key);
-  counters_t* ctrs = (counters_t*) item;
-  counters_iterate(ctrs, fp, printCounts);
-  fprintf(fp, "\n");
+  FILE* fp;
+  if ((fp = (FILE*) arg) != NULL) {
+    fprintf(fp, "%s", key);
+    counters_t* ctrs = (counters_t*) item;
+    counters_iterate(ctrs, fp, printCounts);
+    fprintf(fp, "\n");
+  }
 }
 
 
