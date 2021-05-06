@@ -90,6 +90,8 @@ pagedir_check(char* dirName)
     sprintf(fullpath, "%s/.crawler", dirName);
   }
 
+  printf("%s\n", fullpath);
+
   FILE* fp;
   if ((fp = fopen(fullpath, "r")) != NULL) {
     fclose(fp);

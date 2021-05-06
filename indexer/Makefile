@@ -19,6 +19,8 @@ OBJS = indexer.o
 LLIBS = ../libcs50/libcs50-given.a ../common/common.a
 
 all: $(PROG) $(LLIBS)
+	
+	
 
 $(PROG): $(OBJS) $(LLIBS) 	
 	$(CC) $(CFLAGS) $^ -o $@
