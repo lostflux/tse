@@ -9,21 +9,37 @@
  * 
  */
 
-/************** Header Files ******************/
+/******** Header Files *********/
 
+/* standard libraries */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
+/* self */
 #include "word.h"
 
+/**
+ * @function: normalizeWord
+ * @brief: see word.h for documentation.
+ * 
+ * Inputs:
+ * @param word: a word (char pointer) to be normalized.
+ * 
+ * Returns: none.
+ */
 void
 normalizeWord(char* word)
 {
-  if (word != NULL) {
-    for (int i = 0; i < strlen(word); i++) {
-      word[i] = tolower(word[i]);
-    }
+  /* assert pointer to word is valid. */
+  assert(word != NULL);                     
+
+   // step through length of word.
+  for (int i = 0; i < strlen(word); i++) {
+
+    // normalize each char in word.
+    word[i] = tolower(word[i]);
   }
 }

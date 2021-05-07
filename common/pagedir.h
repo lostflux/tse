@@ -12,7 +12,15 @@
 
 #define __PAGEDIR_H
 
+/*********** Header Files ************/
+
+/* Standard Libraries */
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
+
+/* Data Structures */
 #include "webpage.h"
 
 // typedef struct webpage webpage_t;
