@@ -3,7 +3,7 @@
 # Amittai J. Wekesa, May 2021
 
 # Flag to print crawler progress
-TESTFLAGS=-DAPPTEST
+TESTFLAGS=-DLOGPROGRESS -DQUICKTEST
 
 # Standard flags 
 CC = gcc
@@ -37,15 +37,12 @@ indexer.o: indexer.c $(LLIBS)
 
 test: indexer.c $(LLIBS) 
 	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indexer
-	bash -v ./testing.sh
+	./indexer
 
 clean:
 	rm -f core *core.*
 	rm -f $(PROG) *~ *.o
 
-valgrind: 
-	make all
+valgrind: indexer.c $(LLIBS) 
+	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indexer
 	valgrind --leak-check=full --show-leak-kinds=all ./indexer
-
-	
-	# bash -v valgrind.sh

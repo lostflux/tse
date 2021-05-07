@@ -10,22 +10,40 @@
  */
 
 /************** Header Files ***************/
+/* standard libraries */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-#include "mem.h"
+/* data structures */
 #include "webpage.h"
-#include "pagedir.h"
 #include "index.h"
+
+/* memory library */
+#include "mem.h"
+
+/* TSE libraries */
+#include "pagedir.h"
 #include "word.h"
 
 
 /************** Function Prototypes ***************/
+
+/**
+ * @function: parseArgs
+ * @brief: parses the commandline arguments and interprets them for the indexer 
+ * 
+ * @param argv 
+ * @param pageDirectory 
+ * @param indexFileName 
+ */
 static void parseArgs(char* argv[], char** pageDirectory, char** indexFileName);
 static void indexBuild(const char* pageDirectory, index_t* index);
 static void indexPage(webpage_t* page, int docID, index_t* index);
+
+/* function to log progress */
+static void logProgress(const int depth, const char* operation, const char* item);
 
 
 
@@ -33,33 +51,36 @@ int
 main(int argc, char* argv[])
 {
 
+/* QUICKTEST MODULE */
 #ifdef QUICKTEST
   char* testArgs[3];
   testArgs[0] = "indexer";
   testArgs[1] = "../data/output/wikipedia-1";
-  testArgs[2] = "../data/output/wikipedia-1/index";
+  testArgs[2] = "../data/output/wikipedia-1.index";
 
-  char** pageDirectory = mem_malloc_assert(sizeof(argv[1]), "Memory allocation for pageDirectory failed.");
-  char** indexFileName = mem_malloc_assert(sizeof(argv[2]), "Memory allocation for indexFileName failed.");
+  char** pageDirectory = mem_malloc_assert(sizeof(testArgs[1]), "Memory allocation for pageDirectory failed.");
+  char** indexFileName = mem_malloc_assert(sizeof(testArgs[2]), "Memory allocation for indexFileName failed.");
   parseArgs(testArgs, pageDirectory, indexFileName);
 
   index_t* index = index_new();
   indexBuild(*pageDirectory, index);
 
   FILE* fp = fopen(*indexFileName, "w");
-  printf("Printing...\n");
   index_print(index, fp);
+  logProgress(0, "Built", *indexFileName);
   fclose(fp);
 
   index_delete(index);
+  logProgress(0, "Deleted", "index object.");
 
   mem_free(pageDirectory);
   mem_free(indexFileName);
 
   return 0;
-#endif
+#else
+/* NORMAL FUNCTIONALITY */  
 
-  /*  If invalid number of arguments, print usage and error message, exit non-zero.   */
+  /* If invalid number of arguments, print usage and error message, exit non-zero. */
   if (argc != 3) {
     const char* usage = "./indexer [pageDirectory] [indexFilename]\n";
 
@@ -78,16 +99,18 @@ main(int argc, char* argv[])
   indexBuild(*pageDirectory, index);
 
   FILE* fp = fopen(*indexFileName, "w");
-  printf("Printing...\n");
   index_print(index, fp);
+  logProgress(1, "Printed", *indexFileName);
   fclose(fp);
 
   index_delete(index);
+  logProgress(0, "Deleted", "index object.");
 
   mem_free(pageDirectory);
   mem_free(indexFileName);
 
   return 0;
+#endif
 }
 
 static void
@@ -103,7 +126,6 @@ parseArgs(char* argv[], char** pageDirectory, char** indexFileName)
   *pageDirectory = argv[1];
 
   FILE* fp;
-  printf("indexFileName: %s\n", argv[2]);
   if ((fp = fopen(argv[2], "w")) == NULL) {
     fprintf(stderr, "Invalid index file name and/or directory.\n");
     mem_free(pageDirectory);
@@ -112,13 +134,16 @@ parseArgs(char* argv[], char** pageDirectory, char** indexFileName)
   }
   fclose(fp);
   *indexFileName = argv[2];
+
+  /* log progress */
+  logProgress(0, "dir", *pageDirectory);
+  logProgress(0, "index", *indexFileName);
 }
 
 static void 
 indexBuild(const char* pageDirectory, index_t* index)
-{
-  printf("Checking directory: %s\n", pageDirectory);
-  
+{  
+  logProgress(2, "START", "\n");
   for (int docID=1; ; docID++) {
 
     char extension[20];
@@ -134,11 +159,11 @@ indexBuild(const char* pageDirectory, index_t* index)
     char directory[strlen(pageDirectory) + strlen(extension)];
     sprintf(directory, "%s%s", pageDirectory, extension);
 
-    printf("Checking file: %s\n", directory);
+    logProgress(3, "file", directory);
 
     webpage_t* page;
     if ((page = pagedir_load(directory)) != NULL) {
-      printf("Found page: %s\n", webpage_getURL(page));
+      logProgress(4, "page", webpage_getURL(page));
 
       // index the page
       indexPage(page, docID, index);
@@ -148,6 +173,7 @@ indexBuild(const char* pageDirectory, index_t* index)
 
     }
     else {
+      logProgress(2, "END", "\n");
       break;
     }
   }
@@ -162,8 +188,26 @@ indexPage(webpage_t* page, int docID, index_t* index)
     if (strlen(word) > 2) {
       normalizeWord(word);
       index_insert(index, word, docID);
-      // printf("Inserted: %s %d\n", word, docID);
     }
     mem_free(word);
   } 
+}
+
+
+static void 
+logProgress(const int depth, const char* operation, const char* item)
+{
+#ifdef LOGPROGRESS
+  if (strcmp(operation, "START") == 0) {
+    printf("%s %*s%7s\n", item, 2*depth, "  ", operation);
+  }
+  else if (strcmp(operation, "END") == 0) {
+    printf("%*s%7s %s\n", 2*depth, "  ", operation, item);
+  }
+  else {
+    printf("%*s%7s: %s\n", 2*depth, "  ", operation, item);
+  }
+#else
+  ;
+#endif
 }

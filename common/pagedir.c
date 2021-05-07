@@ -11,23 +11,23 @@
 
 /************** Header Files ****************/
 
-// standard libraries
+/* standard libraries */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 
-// file IO
+/* file IO */
 #include "file.h"
 
-// memory
+/* memory */
 #include "mem.h"
 
-// data structures
+/* data structures */
 #include "webpage.h"
 
-// self
+/* self */
 #include "pagedir.h"
 
 
