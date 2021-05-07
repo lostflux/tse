@@ -4,13 +4,13 @@
 
 CC = gcc
 CFLAGS = -Wall -pedantic -std=c11 -ggdb -I ../libcs50
-OBJS = pagedir.o index.o word.o hashtable.o counters.o set.o hash.o
+OBJS = pagedir.o index.o word.o
 LIB = common.a
 LLIBS = ../libcs50/libcs50-given.a
 MAKE = make
 
 all: 
-	ar -x $(LLIBS)
+	# ar -x $(LLIBS)
 	make $(LIB)
 	rm -f *.o
 # Rules
@@ -20,8 +20,6 @@ $(LIB): $(OBJS)
 pagedir.o: pagedir.h
 index.o: index.h
 word.o: word.h
-
-hash.o: ../libcs50/hash.h
 
 
 # Phony Targets
