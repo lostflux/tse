@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 // file IO
 #include "file.h"
@@ -81,7 +82,9 @@ pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID)
 bool
 pagedir_check(char* dirName)
 {
-  char* fullpath = mem_malloc_assert(strlen(dirName)+7, "full path alloc failed");
+
+  char fullpath[strlen(dirName)+100];
+  // char* fullpath = mem_malloc_assert((strlen(dirName)+10)*sizeof(char), "full path alloc failed");
 
   if (dirName[strlen(dirName)-1] == '/') {
     sprintf(fullpath, "%s.crawler", dirName);
@@ -90,26 +93,26 @@ pagedir_check(char* dirName)
     sprintf(fullpath, "%s/.crawler", dirName);
   }
 
-  printf("%s\n", fullpath);
-
   FILE* fp;
   if ((fp = fopen(fullpath, "r")) != NULL) {
     fclose(fp);
-    mem_free(fullpath);
+    
     return true;
   }
-  fprintf(stderr, "'%s' is not a valid crawler directory.", dirName);
-  mem_free(fullpath);
+
   return false;
 }
 
 webpage_t*
-pagedir_load(char* filepath)
+pagedir_load(const char* path)
 {
+  
   FILE* fp;
-  if ((fp = fopen(filepath, "r")) != NULL) {
-    char* url = file_readLine(fp);
 
+  if ((fp = fopen(path, "r")) != NULL) {
+
+    char* url = file_readLine(fp);
+    
     char* pageDepth = file_readLine(fp);
     int depth = atoi(pageDepth);
     mem_free(pageDepth);
@@ -120,6 +123,8 @@ pagedir_load(char* filepath)
 
     return webpage_new(url, depth, html);
   }
-  return NULL;
+  else {
+    return NULL;
+  }
 }
 

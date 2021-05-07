@@ -47,6 +47,6 @@ bool pagedir_init(const char* pageDirectory);
 
 bool pagedir_check(char* dirName);
 
-webpage_t* pagedir_load(char* filepath);
+webpage_t* pagedir_load(const char* filepath);
 
 #endif /*__PAGEDIR_H */

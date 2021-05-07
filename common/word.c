@@ -18,24 +18,12 @@
 
 #include "word.h"
 
-static int 
-normalizeChar(int c)
-{
-  int norm;
-  switch (isupper(c)) {
-    case 0: norm = c;
-    case 1: norm = tolower(c);
-  }
-
-  return norm;
-}
-
 void
 normalizeWord(char* word)
 {
   if (word != NULL) {
     for (int i = 0; i < strlen(word); i++) {
-      word[i] = normalizeChar(word[i]);
+      word[i] = tolower(word[i]);
     }
   }
 }
