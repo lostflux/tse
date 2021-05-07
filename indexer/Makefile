@@ -16,14 +16,16 @@ PROG = indexer
 OBJS = indexer.o
 
 # Libraries
-LLIBS = ../libcs50/libcs50-given.a ../common/common.a
+LLIBS = ../common/common.a ../libcs50/libcs50-given.a 
 
-all: $(PROG) $(LLIBS)
-	
+all: 
+	make -C ../common
+	make $(PROG)
 	
 
 $(PROG): $(OBJS) $(LLIBS) 	
 	$(CC) $(CFLAGS) $^ -o $@
+	rm -f $(OBJS)
 
 indexer.o: indexer.c $(LLIBS)
 
@@ -41,7 +43,9 @@ clean:
 	rm -f core *core.*
 	rm -f $(PROG) *~ *.o
 
-valgrind: indexer.c $(LLIBS) 
-	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o crawler
+valgrind: 
+	make all
+	valgrind --leak-check=full --show-leak-kinds=all ./indexer
+
 	
-	bash -v valgrind.sh
+	# bash -v valgrind.sh
