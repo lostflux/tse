@@ -110,9 +110,11 @@ main(int argc, char* argv[])
   indexBuild(*pageDirectory, index);
 
   FILE* fp = fopen(*indexFileName, "w");
-  index_print(index, fp);
-  logProgress(1, "Printed", *indexFileName);
-  fclose(fp);
+  if (fp != NULL) {
+    index_print(index, fp);
+    logProgress(1, "Printed", *indexFileName);
+    fclose(fp);
+  }
 
   index_delete(index);
   logProgress(0, "Deleted", "index object.");
