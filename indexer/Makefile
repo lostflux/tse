@@ -75,7 +75,7 @@ clean:
 # usually takes a while to complete.
 memcheck: indexer.c $(LLIBS)
 	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indexer
-	bash -v memcheck.sh
+	bash -v ./memcheck.sh
 
 
 # check ./indextest for memory usage and leaks.
