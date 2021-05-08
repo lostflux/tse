@@ -1,3 +1,5 @@
 indexer
+indextest
+indexcmp
 *.a
 *.o
