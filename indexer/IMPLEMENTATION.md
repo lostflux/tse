@@ -30,7 +30,7 @@ The index data structure is inplemented in [index.c](../common/index.c) and expo
 
 ## Control flow
 
-The Indexer is implemented in one file `indexer.c`, with five functions:
+The Indexer is implemented in one file [indexer.c](./indexer.c), with five functions:
 
 ### main
 
@@ -90,7 +90,7 @@ while word from page is not NULL,
 ### pagedir
 
 We create a re-usable module `pagedir.c` to handles the *pagesaver*  mentioned in the design (writing a page to the pageDirectory), and marking it as a Crawler-produced pageDirectory (as required in the spec).
-We chose to write this as a separate module, in `../common`, to encapsulate all the knowledge about how to initialize and validate a pageDirectory, and how to write and read page files, in one place... anticipating future use by the Indexer and Querier.
+We chose to write this as a separate module, in [common](../common) directory, to encapsulate all the knowledge about how to initialize and validate a pageDirectory, and how to write and read page files, in one place... anticipating future use by the Indexer and Querier.
 
 #### Pseudocode for `pagedir_init`
 
@@ -134,7 +134,7 @@ We chose to write this as a separate module, in `../common`, to encapsulate all 
 
 ### libcs50
 
-We leverage the modules of libcs50, most notably `bag`, `hashtable`, and `webpage`.
+We leverage the modules of [libcs50](../libcs50), most notably [bag](../libcs50/bag.h), [hashtable](../libcs50/hashtable.h), and [webpage](../libcs50/webpage.h).
 See that directory for module interfaces.
 The new `webpage` module allows us to represent pages as `webpage_t` objects, to fetch a page from the Internet, and to scan a (fetched) page for URLs; in that regard, it serves as the *pagefetcher* described in the design.
 Indeed, `webpage_fetch` enforces the 1-second delay for each fetch, so our crawler need not implement that part of the spec.
@@ -157,7 +157,7 @@ static void logProgress(const int depth, const char* operation, const char* item
 
 ### pagedir
 
-Detailed descriptions of each function's interface is provided as a paragraph comment prior to each function's declaration in `pagedir.h` and is not repeated here.
+Detailed descriptions of each function's interface is provided as a paragraph comment prior to each function's declaration in [pagedir.h](../common/pagedir.h) and is not repeated here.
 
 ```c
 bool pagedir_init(const char* pageDirectory);
@@ -191,15 +191,15 @@ Here is an implementation-specific testing plan.
 There are four units (indexer, pagedir, index, and word).
 
 The `index` is tested using a routine defined in `indextest.c`, which reads in data from a previously generated indexer file, re-writing it out to a new file, and comparing the two files for discrepancies.
-Two shell scripts, `indextest.sh` and `indextest_memcheck.sh`, check the dunctionality and memory usage of `indextest.c`. See `indextest.out` and `indextest_memcheck.out` for typical output.
+Two shell scripts, [indextest.sh](./indextest.sh) and [indextest_memcheck.sh](./indextest_memcheck.sh), check the dunctionality and memory usage of [indextest.c](./indextest.c). See [indextest.out](./indextest.out) and [indextest_memcheck.out](./indextest_memcheck.out) for typical output.
 
-The `indexer` is tested with `testing.sh`, which passes in directories of previously generated Crawler directories and output files.
-See `testing.out` for typical output.
+The `indexer` is tested with [testing.sh](./testing.sh), which passes in previously generated Crawler directories and output files.
+See [testing.out](./testing.out) for typical output.
 
-Another shell script, `memcheck.sh`, analyses memory usage of the Indexer.
-See `memcheck.out` for typical output.
+Another shell script, [memcheck.sh](./memcheck.sh), analyses memory usage of the Indexer.
+See [memcheck.out](./memcheck.out) for typical output.
 
-The smaller `word` module is tested in its usage in `index.c` and `indextest.c`.
+The smaller [word](../common/word.h) module is tested in its usage in `index.c` and `indextest.c`.
 
 The crawler represents the whole system and is covered below.
 The pagedir unit is tiny; it could be tested using a small C 'driver' to invoke its functions with various arguments, but it is likely sufficient to observe its behavior during the system test.
@@ -214,15 +214,16 @@ For routine regression tests, we index the `../data/outputs/` directory, saving 
 
 ### Integration/system testing
 
-We write a script `testing.sh` that invokes the indexer several times, with a variety of command-line arguments.
-The `indexer` is tested with `testing.sh`, which passes in directories of previously generated Crawler directories and output files.
+The `indexer` is tested with [testing.sh](./testing.sh), which passes in previously generated Crawler directories and output files.
+See [testing.out](./testing.out) for typical output.
+
 First, a sequence of invocations with erroneous arguments, testing each of the possible mistakes that can be made.
 
 See `testing.out` for typical output.
 
-Another shell script, `memcheck.sh`, analyses memory usage of the Indexer.
+Another shell script, [memcheck.sh](./memcheck.sh), analyses memory usage of the Indexer.
 
-See `memcheck.out` for typical output.
+See [memcheck.out](./memcheck.out) for typical output.
 
 Run that script with `bash -v testing.sh` so the output of indexer is intermixed with the commands used to invoke the crawler.
 Verify correct behavior by studying the output, and by sampling the files created in the respective pageDirectories.
