@@ -65,7 +65,7 @@ index_new()
   index_t* index = mem_malloc_assert(sizeof(index_t), "mem alloc for index failed.");
 
   // initialize the hashtable to store items in the index.
-  index->ht = hashtable_new(20);
+  index->ht = hashtable_new(200);
   assert(index->ht != NULL);
 
   // return pointer to the index.
