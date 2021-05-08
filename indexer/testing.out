@@ -1,0 +1,382 @@
+gcc -Wall -pedantic -std=c11 -ggdb -I ../libcs50 -I ../common -DLOGPROGRESS -DQUICKTEST indexer.c ../common/common.a ../libcs50/libcs50-given.a -o indexer
+printf "\nBuilding crawler directories... ... ...\n\n"
+
+Building crawler directories... ... ...
+
+make test -C ../crawler
+make[1]: Entering directory '/thayerfs/home/f004h9s/cs50-dev/labs/tse-siavava/crawler'
+gcc -Wall -pedantic -std=c11 -ggdb -I ../libcs50 -I ../common crawler.c ../libcs50/libcs50-given.a ../common/common.a -o crawler
+bash -v ./testing.sh
+#!/bin/bash
+#
+# testing.sh
+# usage:
+#   ./testing.sh
+# output:
+#   stdout
+#
+# Amittai Wekesa, April 2021
+
+
+# invalid usage
+
+# no args 
+./crawler
+Incorrect usage: too few arguments!
+Usage: ./crawler seedURL pageDirectory maxDepth
+
+# one arg (too few)
+./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/
+Incorrect usage: too few arguments!
+Usage: ./crawler seedURL pageDirectory maxDepth
+
+# two args (too few)
+./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/ ../data/output/letters-6
+Incorrect usage: too few arguments!
+Usage: ./crawler seedURL pageDirectory maxDepth
+
+# four args (too many)
+./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/index.html ../data/output/letters-6 6 dummy-arg
+Incorrect usage: too many arguments!
+Usage: ./crawler seedURL pageDirectory maxDepth
+
+# three args (maxDepth invalid)
+./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/index.html ../data/output/letters-10 -1
+max depth cannot be less than ZERO.
+
+
+# VALID TESTS:
+
+# letters, maxDepth = 0
+./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/index.html ../data/output/letters-0 0
+
+# letters, maxDepth = 10
+./crawler http://cs50tse.cs.dartmouth.edu/tse/letters/index.html ../data/output/letters-10 10
+
+# toscrape, maxDepth = 0
+./crawler http://cs50tse.cs.dartmouth.edu/tse/toscrape/index.html ../data/output/toscrape-0 0
+
+# toscrape, maxDepth = 1
+./crawler http://cs50tse.cs.dartmouth.edu/tse/toscrape/index.html ../data/output/toscrape-1 1
+
+# wikipedia, maxDepth = 0
+./crawler http://cs50tse.cs.dartmouth.edu/tse/wikipedia/index.html ../data/output/wikipedia-0 0
+
+# wikipedia, maxDepth = 1
+./crawler http://cs50tse.cs.dartmouth.edu/tse/wikipedia/index.html ../data/output/wikipedia-1 1
+make[1]: Leaving directory '/thayerfs/home/f004h9s/cs50-dev/labs/tse-siavava/crawler'
+bash -v ./testing.sh
+#!/bin/bash
+#
+# testing.sh
+# usage:
+#   ./testing.sh
+# output:
+#   stdout
+#
+# Author: Amittai Wekesa, April 2021
+
+: '
+DISCLAIMER: The functionality of this testing script is dependent on
+the existence of the following directories in the directory ../data/output 
+1.  letters-0
+2. letters-10
+3. toscrape-0
+4. toscrape-1
+5. wikipedia-0
+6. wikipedia-1
+
+To generate these directories and their contents, run the crawler test script "testing.sh".
+
+In turn, this script creats *.index files in the same directory ../data/output.
+'
+
+# build source directories:
+# make all -C ../crawler
+# bash -v ../crawler/testing.sh
+
+
+# incorrect usage
+
+# no args 
+./indexer
+Too few arguments.
+Usage: './indexer [pageDirectory] [indexFilename]
+'
+# one arg (too few)
+./indexer ../data/output/wikipedia-1 
+Too few arguments.
+Usage: './indexer [pageDirectory] [indexFilename]
+'
+# three args (too many)
+./indexer ../data/output/wikipedia-1 ../data/output/wikipedia-1.index ../data/output/wikipedia-1.index
+Too many arguments.
+Usage: './indexer [pageDirectory] [indexFilename]
+'
+# invalid source directory
+./indexer ../data/output/wikipedia-1000 ../data/output/wikipedia-1.index
+'../data/output/wikipedia-1000' is not a valid crawler directory.
+
+# invalid output directory (wherein to output create file)
+./indexer ../data/output/wikipedia-1 ../data/outputDUMMY/wikipedia-1.index
+Invalid index file name and/or directory.
+
+
+# VALID TESTS:
+
+# letters, maxDepth = 0
+./indexer ../data/output/letters-0 ../data/output/letters-0.index
+      dir: ../data/output/letters-0
+    index: ../data/output/letters-0.index
+
+       START
+         file: ../data/output/letters-0/1
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/index.html
+         file: ../data/output/letters-0/2
+        END 
+
+  printed: ../data/output/letters-0.index
+  deleted: index object.
+
+# letters, maxDepth = 10
+./indexer ../data/output/letters-10 ../data/output/letters-10.index
+      dir: ../data/output/letters-10
+    index: ../data/output/letters-10.index
+
+       START
+         file: ../data/output/letters-10/1
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/index.html
+         file: ../data/output/letters-10/2
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/A.html
+         file: ../data/output/letters-10/3
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/B.html
+         file: ../data/output/letters-10/4
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/E.html
+         file: ../data/output/letters-10/5
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/G.html
+         file: ../data/output/letters-10/6
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/H.html
+         file: ../data/output/letters-10/7
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/F.html
+         file: ../data/output/letters-10/8
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/D.html
+         file: ../data/output/letters-10/9
+           page: http://cs50tse.cs.dartmouth.edu/tse/letters/C.html
+         file: ../data/output/letters-10/10
+        END 
+
+  printed: ../data/output/letters-10.index
+  deleted: index object.
+
+# toscrape, maxDepth = 0
+./indexer ../data/output/toscrape-0 ../data/output/toscrape-0.index
+      dir: ../data/output/toscrape-0
+    index: ../data/output/toscrape-0.index
+
+       START
+         file: ../data/output/toscrape-0/1
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/index.html
+         file: ../data/output/toscrape-0/2
+        END 
+
+  printed: ../data/output/toscrape-0.index
+  deleted: index object.
+
+# toscrape, maxDepth = 1
+./indexer ../data/output/toscrape-1 ../data/output/toscrape-1.index
+      dir: ../data/output/toscrape-1
+    index: ../data/output/toscrape-1.index
+
+       START
+         file: ../data/output/toscrape-1/1
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/index.html
+         file: ../data/output/toscrape-1/2
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/page-2.html
+         file: ../data/output/toscrape-1/3
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/its-only-the-himalayas_981/index.html
+         file: ../data/output/toscrape-1/4
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/libertarianism-for-beginners_982/index.html
+         file: ../data/output/toscrape-1/5
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/mesaerion-the-best-science-fiction-stories-1800-1849_983/index.html
+         file: ../data/output/toscrape-1/6
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/olio_984/index.html
+         file: ../data/output/toscrape-1/7
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/our-band-could-be-your-life-scenes-from-the-american-indie-underground-1981-1991_985/index.html
+         file: ../data/output/toscrape-1/8
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/rip-it-up-and-start-again_986/index.html
+         file: ../data/output/toscrape-1/9
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/scott-pilgrims-precious-little-life-scott-pilgrim-1_987/index.html
+         file: ../data/output/toscrape-1/10
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/set-me-free_988/index.html
+         file: ../data/output/toscrape-1/11
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/shakespeares-sonnets_989/index.html
+         file: ../data/output/toscrape-1/12
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/starving-hearts-triangular-trade-trilogy-1_990/index.html
+         file: ../data/output/toscrape-1/13
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/the-black-maria_991/index.html
+         file: ../data/output/toscrape-1/14
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/the-boys-in-the-boat-nine-americans-and-their-epic-quest-for-gold-at-the-1936-berlin-olympics_992/index.html
+         file: ../data/output/toscrape-1/15
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/the-coming-woman-a-novel-based-on-the-life-of-the-infamous-feminist-victoria-woodhull_993/index.html
+         file: ../data/output/toscrape-1/16
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/the-dirty-little-secrets-of-getting-your-dream-job_994/index.html
+         file: ../data/output/toscrape-1/17
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/the-requiem-red_995/index.html
+         file: ../data/output/toscrape-1/18
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/sapiens-a-brief-history-of-humankind_996/index.html
+         file: ../data/output/toscrape-1/19
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/sharp-objects_997/index.html
+         file: ../data/output/toscrape-1/20
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/soumission_998/index.html
+         file: ../data/output/toscrape-1/21
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/tipping-the-velvet_999/index.html
+         file: ../data/output/toscrape-1/22
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/a-light-in-the-attic_1000/index.html
+         file: ../data/output/toscrape-1/23
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/crime_51/index.html
+         file: ../data/output/toscrape-1/24
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/erotica_50/index.html
+         file: ../data/output/toscrape-1/25
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/cultural_49/index.html
+         file: ../data/output/toscrape-1/26
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/politics_48/index.html
+         file: ../data/output/toscrape-1/27
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/health_47/index.html
+         file: ../data/output/toscrape-1/28
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/novels_46/index.html
+         file: ../data/output/toscrape-1/29
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/short-stories_45/index.html
+         file: ../data/output/toscrape-1/30
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/suspense_44/index.html
+         file: ../data/output/toscrape-1/31
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/christian_43/index.html
+         file: ../data/output/toscrape-1/32
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/historical_42/index.html
+         file: ../data/output/toscrape-1/33
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/self-help_41/index.html
+         file: ../data/output/toscrape-1/34
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/academic_40/index.html
+         file: ../data/output/toscrape-1/35
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/spirituality_39/index.html
+         file: ../data/output/toscrape-1/36
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/contemporary_38/index.html
+         file: ../data/output/toscrape-1/37
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/thriller_37/index.html
+         file: ../data/output/toscrape-1/38
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/biography_36/index.html
+         file: ../data/output/toscrape-1/39
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/business_35/index.html
+         file: ../data/output/toscrape-1/40
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/christian-fiction_34/index.html
+         file: ../data/output/toscrape-1/41
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/food-and-drink_33/index.html
+         file: ../data/output/toscrape-1/42
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/history_32/index.html
+         file: ../data/output/toscrape-1/43
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/horror_31/index.html
+         file: ../data/output/toscrape-1/44
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/humor_30/index.html
+         file: ../data/output/toscrape-1/45
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/adult-fiction_29/index.html
+         file: ../data/output/toscrape-1/46
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/parenting_28/index.html
+         file: ../data/output/toscrape-1/47
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/autobiography_27/index.html
+         file: ../data/output/toscrape-1/48
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/psychology_26/index.html
+         file: ../data/output/toscrape-1/49
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/art_25/index.html
+         file: ../data/output/toscrape-1/50
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/paranormal_24/index.html
+         file: ../data/output/toscrape-1/51
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/poetry_23/index.html
+         file: ../data/output/toscrape-1/52
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/science_22/index.html
+         file: ../data/output/toscrape-1/53
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/young-adult_21/index.html
+         file: ../data/output/toscrape-1/54
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/new-adult_20/index.html
+         file: ../data/output/toscrape-1/55
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/fantasy_19/index.html
+         file: ../data/output/toscrape-1/56
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/add-a-comment_18/index.html
+         file: ../data/output/toscrape-1/57
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/sports-and-games_17/index.html
+         file: ../data/output/toscrape-1/58
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/science-fiction_16/index.html
+         file: ../data/output/toscrape-1/59
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/default_15/index.html
+         file: ../data/output/toscrape-1/60
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/music_14/index.html
+         file: ../data/output/toscrape-1/61
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/nonfiction_13/index.html
+         file: ../data/output/toscrape-1/62
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/religion_12/index.html
+         file: ../data/output/toscrape-1/63
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/childrens_11/index.html
+         file: ../data/output/toscrape-1/64
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/fiction_10/index.html
+         file: ../data/output/toscrape-1/65
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/womens-fiction_9/index.html
+         file: ../data/output/toscrape-1/66
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/romance_8/index.html
+         file: ../data/output/toscrape-1/67
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/philosophy_7/index.html
+         file: ../data/output/toscrape-1/68
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/classics_6/index.html
+         file: ../data/output/toscrape-1/69
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/sequential-art_5/index.html
+         file: ../data/output/toscrape-1/70
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/historical-fiction_4/index.html
+         file: ../data/output/toscrape-1/71
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/mystery_3/index.html
+         file: ../data/output/toscrape-1/72
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books/travel_2/index.html
+         file: ../data/output/toscrape-1/73
+           page: http://cs50tse.cs.dartmouth.edu/tse/toscrape/catalogue/category/books_1/index.html
+         file: ../data/output/toscrape-1/74
+        END 
+
+  printed: ../data/output/toscrape-1.index
+  deleted: index object.
+
+# wikipedia, maxDepth = 0
+./indexer ../data/output/wikipedia-0 ../data/output/wikipedia-0.index
+      dir: ../data/output/wikipedia-0
+    index: ../data/output/wikipedia-0.index
+
+       START
+         file: ../data/output/wikipedia-0/1
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/index.html
+         file: ../data/output/wikipedia-0/2
+        END 
+
+  printed: ../data/output/wikipedia-0.index
+  deleted: index object.
+
+# wikipedia, maxDepth = 1
+./indexer ../data/output/wikipedia-1 ../data/output/wikipedia-1.index
+      dir: ../data/output/wikipedia-1
+    index: ../data/output/wikipedia-1.index
+
+       START
+         file: ../data/output/wikipedia-1/1
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/index.html
+         file: ../data/output/wikipedia-1/2
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/Linked_list.html
+         file: ../data/output/wikipedia-1/3
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/Hash_table.html
+         file: ../data/output/wikipedia-1/4
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/Dartmouth_College.html
+         file: ../data/output/wikipedia-1/5
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/Unix.html
+         file: ../data/output/wikipedia-1/6
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/C_(programming_language).html
+         file: ../data/output/wikipedia-1/7
+           page: http://cs50tse.cs.dartmouth.edu/tse/wikipedia/Computer_science.html
+         file: ../data/output/wikipedia-1/8
+        END 
+
+  printed: ../data/output/wikipedia-1.index
+  deleted: index object.
+
