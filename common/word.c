@@ -1,12 +1,12 @@
 /**
  * @file word.c
- * @author your name (you@domain.com)
- * @brief 
+ * @author Amittai J. Wekesa (@siavava)
+ * @brief: a (short) library to process and normalize
+ * words extracted from websites.
  * @version 0.1
  * @date 2021-05-04
  * 
  * @copyright Copyright (c) 2021
- * 
  */
 
 /******** Header Files *********/
@@ -21,6 +21,7 @@
 /* self */
 #include "word.h"
 
+
 /**
  * @function: normalizeWord
  * @brief: see word.h for documentation.
@@ -33,7 +34,7 @@
 void
 normalizeWord(char* word)
 {
-  /* assert pointer to word is valid. */
+  /* make sure pointer to word is valid */
   assert(word != NULL);                     
 
    // step through length of word.

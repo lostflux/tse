@@ -1,7 +1,12 @@
 /**
  * @file index.h
- * @author your name (you@domain.com)
- * @brief 
+ * @author Amittai J. Wekesa (@siavava)
+ * @brief: index data structure;
+ * exports functionality of an index hashtable
+ * useful to store word, document ID, count data.
+ * 
+ * Functionality is defined in index.c
+ * 
  * @version 0.1
  * @date 2021-05-04
  * 
@@ -68,6 +73,19 @@ index_t* index_new();
  * Returns: none.
  */
 void index_insert(index_t* index, char* word, int docID);
+
+/**
+ * @function: index_set
+ * @brief: sets the docID entry for specified word to the provided count.
+ * If document ID counter for the specific word does not yet exist,
+ * creates a new counter and initializes it to the specified count.
+ * 
+ * @param index: pointer to a valid index object.
+ * @param word: word to be inserted.
+ * @param docID: document ID where word was found.
+ * @param count: pre-determined count of word in the document ID.
+ */
+void index_set(index_t* index, char* word, int docID, int count);
 
 /**
  * @function: index_iterate()

@@ -1,7 +1,7 @@
 /**
  * @file pagedir.h
  * @author Amittai J. Wekesa (@siavava)
- * @brief: pagedir library: exports functionality from pagedir.c 
+ * @brief: directory IO -- exports functionality from pagedir.c 
  * @version 0.1
  * @date 2021-04-29
  * 
@@ -53,8 +53,30 @@ void pagedir_save(const webpage_t* page, const char* pageDirectory, const int do
  */
 bool pagedir_init(const char* pageDirectory);
 
+
+/**
+ * @function: pagedir_check
+ * @brief: checks if a specified directory is a crawler directory.
+ * Polls for existence of ".crawler" file.
+ * 
+ * @param dirName: directory wherein to check for crawler files.
+ * @return true: valid crawler directory.
+ * @return false: not a valid crawler directory. 
+ */
 bool pagedir_check(char* dirName);
 
+
+/**
+ * @function: pagedir_load
+ * @brief: reads data from a crawler-generated file and reconstructs the webpage.
+ * DISCLAIMER: This function is guaranteed 
+ * to ALWAYS return feedback to the caller,
+ * even if the file does not exist.
+ * 
+ * @param filepath: path to the specific file to check.
+ * @return webpage_t*: a reconstructed webpage object.
+ * @return NULL: file does not exist.
+ */
 webpage_t* pagedir_load(const char* filepath);
 
 #endif /*__PAGEDIR_H */

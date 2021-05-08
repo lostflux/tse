@@ -1,9 +1,9 @@
 /**
  * @file word.h
- * @author your name (you@domain.com)
+ * @author Amittai J. Wekesa (@siavava)
  * @brief 
- * @version 0.1
- * @date 2021-05-04
+ * @version 0.2
+ * @date 2021-05-08
  * 
  * @copyright Copyright (c) 2021
  * 

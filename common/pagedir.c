@@ -2,8 +2,8 @@
  * @file pagedir.c
  * @author Amittai J. Wekesa (@siavava)
  * @brief: directory I/O functionality. 
- * @version 0.1
- * @date 2021-04-29
+ * @version 0.2
+ * @date 2021-05-08
  * 
  * @copyright Copyright (c) 2021
  * 
@@ -79,13 +79,16 @@ pagedir_save(const webpage_t* page, const char* pageDirectory, const int docID)
   }
 }
 
+/**
+ * @brief see pagedir.h for documentation
+ */
 bool
 pagedir_check(char* dirName)
 {
-
+  
   char fullpath[strlen(dirName)+100];
-  // char* fullpath = mem_malloc_assert((strlen(dirName)+10)*sizeof(char), "full path alloc failed");
 
+  // generate path to crawler config file.
   if (dirName[strlen(dirName)-1] == '/') {
     sprintf(fullpath, "%s.crawler", dirName);
   }
@@ -93,36 +96,53 @@ pagedir_check(char* dirName)
     sprintf(fullpath, "%s/.crawler", dirName);
   }
 
+  /*
+   * if file exists (hence opens successfully),
+   * return true
+   */
   FILE* fp;
   if ((fp = fopen(fullpath, "r")) != NULL) {
     fclose(fp);
-    
     return true;
   }
 
+  /*
+   * if file fails to open,
+   * return false
+   */
   return false;
 }
 
+/**
+ * @brief see pagedir.h for documentation
+ */
 webpage_t*
 pagedir_load(const char* path)
 {
-  
   FILE* fp;
 
+  /* if file opens successfully, load the webpage */
   if ((fp = fopen(path, "r")) != NULL) {
-
+    
+    // load url
     char* url = file_readLine(fp);
     
+    // load page depth where crawler found page
     char* pageDepth = file_readLine(fp);
     int depth = atoi(pageDepth);
     mem_free(pageDepth);
 
+    // load page HTML
     char* html = file_readUntil(fp, NULL);
 
+    // close the file
     fclose(fp);
 
+    // return pointer to a reconstructed webpage.
     return webpage_new(url, depth, html);
   }
+
+  /* if file fails to open, return NULL */
   else {
     return NULL;
   }

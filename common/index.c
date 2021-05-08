@@ -1,7 +1,12 @@
 /**
  * @file index.c
- * @author your name (you@domain.com)
- * @brief 
+ * @author Amittai J. Wekesa (@siavava)
+ * @brief: index data structure;
+ * defines functionality of an index hashtable
+ * useful to store word, document ID, count data.
+ * 
+ * Functionality is exported through index.h
+ * 
  * @version 0.1
  * @date 2021-05-04
  * 
@@ -28,7 +33,7 @@
 /* self */
 #include "index.h"
 
-/******** Static functions *********/
+/******** Static function prototypes *********/
 static void printWord(void* arg, const char* key, void* item);
 static void printCounts(void* arg, int key, int count);
 static void deleteCounter(void* arg);
@@ -41,7 +46,7 @@ typedef struct index {
 } index_t;
 
 
-/********** Function Definitions ***********/
+/********** Library Functions ***********/
 
 /**
  * @function: index_new()
@@ -102,6 +107,31 @@ index_insert(index_t* index, char* word, int docID)
 }
 
 /**
+ * @function: index_set
+ * @brief: see index.h for full documentation.
+ * 
+ * @param index: pointer to a valid index object.
+ * @param word: word to be inserted.
+ * @param docID: document ID where word was found.
+ * @param count: pre-determined count of word in the document ID.
+ */
+void
+index_set(index_t* index, char* word, int docID, int count)
+{
+  assert(index != NULL && word != NULL);
+
+  counters_t* ctrs;
+  if ((ctrs = hashtable_find(index->ht, word)) != NULL) {
+    counters_set(ctrs, docID, count);
+  }
+  else {
+    ctrs = counters_new();
+    counters_set(ctrs, docID, count);
+    hashtable_insert(index->ht, word, ctrs);
+  }
+}
+
+/**
  * @function: index_iterate()
  * @brief: see index.h for full documentation.
  * 
@@ -131,21 +161,23 @@ void (*itemfunc)(void* arg, const char* key, void* item))
 }
 
 /**
- * @function: deleteCounter()
- * @brief: static helper function to call counters_delete()
+ * @function: index_print()
+ * @brief: see index.h for full documentation.
  * 
- * @param arg: pointer to an object, expected to be of type counters_t
+ * Inputs:
+ * @param index: pointer to an index object
+ * @param fp: pointer to a file.
+ * 
+ * Returns: none.
  */
-static void 
-deleteCounter(void* arg)
+void 
+index_print (index_t* index, FILE* fp)
 {
-  assert(arg != NULL);
-  /*
-   * call counters_delete() for the counters object
-   * after converting it to appropriate type.
-   */
-  counters_t* ctrs = (counters_t*) arg;
-  counters_delete(ctrs);
+  assert(index != NULL);
+  assert(fp != NULL);
+
+  // iterate over the index object with printWord
+  index_iterate(index, fp, printWord);
 }
 
 /**
@@ -171,6 +203,10 @@ index_delete(index_t* index)
   mem_free(index);
 }
 
+
+
+/********** Static functions definitions ************/
+
 /**
  * @function: printCounts()
  * @brief: static helper function to print counters_t objects.
@@ -185,8 +221,8 @@ printCounts(void* arg, int key, int count)
 {
   assert(arg != NULL);
 
-  FILE* fp = (FILE*) arg;
-  if (fp != NULL) {
+  FILE* fp;
+  if ( (fp = (FILE*) arg) != NULL) {
 
     // print the key -- count pairs to file. 
     fprintf(fp, " %d %d", key, count);
@@ -227,23 +263,20 @@ printWord(void* arg, const char* key, void* item)
   }
 }
 
-
 /**
- * @function: index_print()
- * @brief: see index.h for full documentation.
+ * @function: deleteCounter()
+ * @brief: static helper function to call counters_delete()
  * 
- * Inputs:
- * @param index: pointer to an index object
- * @param fp: pointer to a file.
- * 
- * Returns: none.
+ * @param arg: pointer to an object, expected to be of type counters_t
  */
-void 
-index_print (index_t* index, FILE* fp)
+static void 
+deleteCounter(void* arg)
 {
-  assert(index != NULL);
-  assert(fp != NULL);
-
-  // iterate over the index object with printWord
-  index_iterate(index, fp, printWord);
+  assert(arg != NULL);
+  /*
+   * call counters_delete() for the counters object
+   * after converting it to appropriate type.
+   */
+  counters_t* ctrs = (counters_t*) arg;
+  counters_delete(ctrs);
 }

@@ -43,7 +43,7 @@ static void logProgress(const int depth, const char* operation, const char* item
 /************* GLOBAL CONSTANTS ***************/
 /* used to provide exit statuses in the various functions in this file. */
 static const int SUCCESS = 0;
-// static const int INCORRECT_USAGE = 1;
+static const int INCORRECT_USAGE = 1;
 static const int INVALID_DIR = 2;
 static const int INVALID_FILE = 3;
 
@@ -51,45 +51,7 @@ static const int INVALID_FILE = 3;
 int 
 main(int argc, char* argv[])
 {
-
-/* QUICKTEST MODULE */
-#ifdef QUICKTEST
-  char* testArgs[3];
-  testArgs[0] = "indexer";
-  testArgs[1] = "../data/output/wikipedia-1";
-  testArgs[2] = "../data/output/wikipedia-1.index";
-
-  // if (argc != 3) {
-  //   const char* usage = "./indexer [pageDirectory] [indexFilename]\n";
-
-  //   if (argc < 3) fprintf(stderr, "Too few arguments.\n");
-  //   else fprintf(stderr, "Too many arguments.\n");
-    
-  //   fprintf(stderr, "Usage: '%s'", usage);
-  //   exit(INCORRECT_USAGE);
-  // }
-
-  char** pageDirectory = mem_malloc_assert(sizeof(testArgs[1]), "Memory allocation for pageDirectory failed.");
-  char** indexFileName = mem_malloc_assert(sizeof(testArgs[2]), "Memory allocation for indexFileName failed.");
-  parseArgs(testArgs, pageDirectory, indexFileName);
-
-  index_t* index = index_new();
-  indexBuild(*pageDirectory, index);
-
-  FILE* fp = fopen(*indexFileName, "w");
-  index_print(index, fp);
-  logProgress(0, "Built", *indexFileName);
-  fclose(fp);
-
-  index_delete(index);
-  logProgress(0, "Deleted", "index object.");
-
-  mem_free(pageDirectory);
-  mem_free(indexFileName);
-
-  return SUCCESS;
-#else
-/* NORMAL FUNCTIONALITY */  
+  /* NORMAL FUNCTIONALITY */  
 
   /* If invalid number of arguments, print usage and error message, exit non-zero. */
   if (argc != 3) {
@@ -99,7 +61,7 @@ main(int argc, char* argv[])
     else fprintf(stderr, "Too many arguments.\n");
     
     fprintf(stderr, "Usage: '%s'", usage);
-    exit(1);
+    exit(INCORRECT_USAGE);
   }
 
   char** pageDirectory = mem_malloc_assert(sizeof(argv[1]), "Memory allocation for pageDirectory failed.");
@@ -112,18 +74,17 @@ main(int argc, char* argv[])
   FILE* fp = fopen(*indexFileName, "w");
   if (fp != NULL) {
     index_print(index, fp);
-    logProgress(1, "Printed", *indexFileName);
+    logProgress(1, "printed", *indexFileName);
     fclose(fp);
   }
 
   index_delete(index);
-  logProgress(0, "Deleted", "index object.");
+  logProgress(0, "deleted", "index object.");
 
   mem_free(pageDirectory);
   mem_free(indexFileName);
 
   return SUCCESS;
-#endif
 }
 
 /**
