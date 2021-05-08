@@ -94,27 +94,34 @@ We chose to write this as a separate module, in `../common`, to encapsulate all 
 
 #### Pseudocode for `pagedir_init`
 
+```pseudocode
   construct the pathname for the .crawler file in that directory
   open the file for writing; on error, return false.
   close the file and return true.
+```
 
 #### Pseudocode for `pagedir_save`
 
+```pseudocode
   construct the pathname for the page file in pageDirectory
   open that file for writing
   print the URL
   print the depth
   print the contents of the webpage
   close the file
+```
 
 #### Pseudocode for `pagedir_check`
 
+```pseudocode
   attempt to open the `.crawler` file in the directory.
   if the open is successful, return `true`.
   if the open fails, return `false`.
+```
 
 #### Pseudocode for `pagedir_load`
 
+```pseudocode
   attempt to open file at provided path.
   if open is successful;
   read in the first sentence in the file: the page's url.
@@ -123,6 +130,7 @@ We chose to write this as a separate module, in `../common`, to encapsulate all 
   close the file.
   create a new webpage with the data.
   return a pointer to the created webpage.
+```
 
 ### libcs50
 
@@ -158,6 +166,8 @@ bool pagedir_check(char* dirName);
 webpage_t* pagedir_load(const char* filepath);
 ```
 
+***
+
 ## Error handling and recovery
 
 All the command-line parameters are rigorously checked before any data structures are allocated or work begins; problems result in a message printed to stderr and a non-zero exit status.
@@ -169,6 +179,8 @@ All code uses defensive-programming tactics to catch and exit (using variants of
 
 That said, certain errors are caught and handled internally: for example, `pagedir_init` returns false if there is any trouble creating the `.crawler` file, allowing the Crawler to decide what to do; the `webpage` module returns false when URLs are not retrievable, and the Crawler does not treat that as a fatal error.
 `pagedir_load` returns `NULL` if creation of a webpage fails, allowing the Indexer to decide on a course of action.
+
+***
 
 ## Testing plan
 
