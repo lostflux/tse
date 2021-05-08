@@ -155,7 +155,7 @@ static void indexPage(webpage_t* page, int docID, index_t* index);
 static void logProgress(const int depth, const char* operation, const char* item);
 ```
 
-### pagedir
+### page dir
 
 Detailed descriptions of each function's interface is provided as a paragraph comment prior to each function's declaration in [pagedir.h](../common/pagedir.h) and is not repeated here.
 
