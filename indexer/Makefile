@@ -27,6 +27,7 @@ LLIBS = ../common/common.a ../libcs50/libcs50-given.a
 all: 
 	make -C ../common
 	make $(PROG)
+	make indextest
 	
 
 # program  (indexer)
