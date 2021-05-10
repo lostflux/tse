@@ -64,13 +64,20 @@ main(int argc, char* argv[])
     exit(INCORRECT_USAGE);
   }
 
+  /* allocate memory for pageDirectory and indexFileName */
   char** pageDirectory = mem_malloc_assert(sizeof(argv[1]), "Memory allocation for pageDirectory failed.");
   char** indexFileName = mem_malloc_assert(sizeof(argv[2]), "Memory allocation for indexFileName failed.");
+
+  /* parse the arguments */
   parseArgs(argv, pageDirectory, indexFileName);
 
+  /* initialize the index */
   index_t* index = index_new();
+
+  /* build the index */
   indexBuild(*pageDirectory, index);
 
+  /* print out the index to file */
   FILE* fp = fopen(*indexFileName, "w");
   if (fp != NULL) {
     index_print(index, fp);
@@ -78,12 +85,15 @@ main(int argc, char* argv[])
     fclose(fp);
   }
 
+  /* delete the index */
   index_delete(index);
   logProgress(0, "deleted", "index object.");
 
+  /* de-allocate memory for pageDirectory and indexFileName */
   mem_free(pageDirectory);
   mem_free(indexFileName);
 
+  /* exit */
   return SUCCESS;
 }
 
