@@ -79,7 +79,13 @@ main(const int argc, const char* argv[])
   logProgress(0, "output", output);
 
   /* create index object */
-  index_t* index = index_new();
+  index_t* index;
+  if ( (index = index_new()) == NULL) {
+    fprintf(stderr, "Error initializing index");
+    fclose(sourceFile);
+    fclose(outputFile);
+    exit(4);
+  }
 
   char* rawText = NULL;       // track text found from source file
   char* foundWord = NULL;     // track actual words that are found

@@ -46,6 +46,7 @@ static const int SUCCESS = 0;
 static const int INCORRECT_USAGE = 1;
 static const int INVALID_DIR = 2;
 static const int INVALID_FILE = 3;
+static const int INDEX_ERROR = 4;
 
 
 int 
@@ -72,7 +73,13 @@ main(int argc, char* argv[])
   parseArgs(argv, pageDirectory, indexFileName);
 
   /* initialize the index */
-  index_t* index = index_new();
+  index_t* index;
+  if ( (index = index_new()) == NULL){
+    fprintf(stderr, "Error creating index.");
+    mem_free(pageDirectory);
+    mem_free(indexFileName);
+    exit(INDEX_ERROR);
+  }
 
   /* build the index */
   indexBuild(*pageDirectory, index);
