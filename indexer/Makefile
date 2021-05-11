@@ -20,7 +20,7 @@ PROG = indexer
 OBJS = indexer.o
 
 # Libraries
-LLIBS = ../common/common.a ../libcs50/libcs50-given.a 
+LLIBS = ../common/common.a ../libcs50/libcs50.a 
 
 
 # indexer functionality (without tests, et al.)

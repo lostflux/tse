@@ -6,7 +6,7 @@ CC = gcc
 CFLAGS = -Wall -pedantic -std=c11 -ggdb -I ../libcs50
 OBJS = pagedir.o index.o word.o
 LIB = common.a
-LLIBS = ../libcs50/libcs50-given.a
+LLIBS = ../libcs50/libcs50.a
 MAKE = make
 
 all: 
