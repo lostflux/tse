@@ -107,6 +107,41 @@ index_insert(index_t* index, char* word, int docID)
 }
 
 /**
+ * @function: index_find
+ * @brief: searches for a key in the index. 
+ * 
+ * @param index: the index wherein to search.
+ * @param word: the word to search for.
+ * 
+ * Returns:
+ * @return: counters_t* ctrs -> counters matching word.
+ * @return: NULL -> word (key) does not exist in the index. 
+ */
+counters_t*
+index_find(index_t* index, char* word)
+{
+  /* make sure parameters are valid */
+  assert(index != NULL && word != NULL);
+
+  /*
+   * return whatever matches the word in the hashtable.
+   * if word does not exist, hashtable_find returns NULL.
+   */
+  return hashtable_find(index->ht, word);
+}
+
+int*
+index_rank(index_t* index, char* word)
+{
+  /* make sure parameters are valid */
+  assert(index != NULL && word != NULL);
+
+  counters_t* ctrs;
+  if ( (ctrs = index_find(index, word)) != NULL)
+}
+
+
+/**
  * @function: index_set
  * @brief: see index.h for full documentation.
  * 
