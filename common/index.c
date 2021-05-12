@@ -37,6 +37,7 @@
 static void printWord(void* arg, const char* key, void* item);
 static void printCounts(void* arg, int key, int count);
 static void deleteCounter(void* arg);
+static void rankPages(void* arg, int key, int value);
 
 
 
@@ -130,14 +131,26 @@ index_find(index_t* index, char* word)
   return hashtable_find(index->ht, word);
 }
 
-int*
+int**
 index_rank(index_t* index, char* word)
 {
   /* make sure parameters are valid */
   assert(index != NULL && word != NULL);
 
   counters_t* ctrs;
-  if ( (ctrs = index_find(index, word)) != NULL)
+  if ( (ctrs = index_find(index, word)) == NULL) {
+    return NULL; 
+  }
+
+  int** key_val = mem_calloc_assert(20, sizeof(int), "Error allocating memory in index_rank");
+  int keys[5] = {0, 0, 0, 0, 0};
+  int values[5] = {0, 0, 0, 0, 0};
+  key_val[0] = keys;
+  key_val[1] = values;
+
+  counters_iterate(ctrs, key_val, rankPages);
+
+  return key_val;
 }
 
 
@@ -314,4 +327,39 @@ deleteCounter(void* arg)
    */
   counters_t* ctrs = (counters_t*) arg;
   counters_delete(ctrs);
+}
+
+/**
+ * @function: rankPages
+ * @brief: static helper function to compare and rank keys in a counters object
+ * 
+ * @param arg: an array maintaining counts
+ * @param key: the key in the counter
+ * @param value: the value in the counter
+ */
+static void
+rankPages(void* arg, int key, int value)
+{
+  assert(arg != NULL);
+
+  int** key_val = (int**) arg;
+  int* keys = key_val[0];
+  int* values = key_val[1];
+  assert(keys != NULL && values != NULL);
+
+  /* check value against current saved scores */
+  for (int i=0; i<=5; i++) {
+
+    /*
+     * if it ranks better than a current value,
+     * shift all values after the value by 1, all keys by 1
+     * and save the key-value pair into the respective arrays.
+     */
+    if (value > values[i]) {
+      for (int j=5; j>i; j--) {
+        keys[i] = keys[i-1];
+        values[i] = values[i-1];
+      }
+    }
+  }
 }
