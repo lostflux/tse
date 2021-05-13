@@ -131,27 +131,7 @@ index_find(index_t* index, char* word)
   return hashtable_find(index->ht, word);
 }
 
-int**
-index_rank(index_t* index, char* word)
-{
-  /* make sure parameters are valid */
-  assert(index != NULL && word != NULL);
 
-  counters_t* ctrs;
-  if ( (ctrs = index_find(index, word)) == NULL) {
-    return NULL; 
-  }
-
-  int** key_val = mem_calloc_assert(20, sizeof(int), "Error allocating memory in index_rank");
-  int keys[5] = {0, 0, 0, 0, 0};
-  int values[5] = {0, 0, 0, 0, 0};
-  key_val[0] = keys;
-  key_val[1] = values;
-
-  counters_iterate(ctrs, key_val, rankPages);
-
-  return key_val;
-}
 
 
 /**
@@ -336,19 +316,23 @@ deleteCounter(void* arg)
  * @param arg: an array maintaining counts
  * @param key: the key in the counter
  * @param value: the value in the counter
+ * @param NUMOAGES: The number of pages in the directory.
  */
 static void
 rankPages(void* arg, int key, int value)
 {
   assert(arg != NULL);
 
-  int** key_val = (int**) arg;
-  int* keys = key_val[0];
-  int* values = key_val[1];
+  int** ranks = (int**) arg;
+  int* keys = ranks[0];
+  int* values = ranks[1];
+
   assert(keys != NULL && values != NULL);
 
+  const int NUMPAGES = keys[0]; 
+
   /* check value against current saved scores */
-  for (int i=0; i<=5; i++) {
+  for (int i=1; i<=NUMPAGES; i++) {
 
     /*
      * if it ranks better than a current value,
@@ -356,10 +340,56 @@ rankPages(void* arg, int key, int value)
      * and save the key-value pair into the respective arrays.
      */
     if (value > values[i]) {
-      for (int j=5; j>i; j--) {
+      for (int j=NUMPAGES; j>i; j--) {
         keys[i] = keys[i-1];
         values[i] = values[i-1];
       }
+      keys[i] = key;
+      values[i] = value;
     }
+  }
+}
+
+int**
+index_rank(index_t* index, char* word, char* indexFileName)
+{
+  /* make sure parameters are valid */
+  assert(index != NULL && word != NULL);
+
+
+  FILE* indexFile;
+  if ( (indexFile = fopen(indexFileName, "r")) == NULL) {
+    fprintf(stderr, "Cannot find index file.");
+    return NULL;
+  }
+  // count the number of lines in the file
+  int NUMLINES = file_numLines(indexFile);
+
+  // close the file
+  fclose(indexFile);
+
+
+  /* check if word exists, get counters */
+  counters_t* ctrs;
+  if ( (ctrs = index_find(index, word)) != NULL) {
+    // create array of ranks
+    int** ranks = mem_malloc_assert(2*NUMLINES*sizeof(int), "Error allocatinf ranks array in index_rank");
+
+    /* initialize the array */
+    ranks[0][0] = NUMLINES;
+    ranks[1][0] = -1;
+
+    for (int i=1; i<=NUMLINES; i++) {
+      ranks[0][i] = 0;
+      ranks[1][i] = 0;
+    }
+    /* build the ranks */
+    counters_iterate(ctrs, ranks, rankPages);
+
+    /* return array of ranks */
+    return ranks;
+  }
+  else {
+    return NULL;
   }
 }

@@ -129,4 +129,7 @@ void index_print (index_t* index, FILE* fp);
  */
 void index_delete(index_t* index);
 
+int** index_rank(index_t* index, char* word, char* indexFileName);
+
+
 #endif /* __INDEX_H */

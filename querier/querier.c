@@ -22,6 +22,9 @@
 /* memory library */
 #include "mem.h"
 
+/* file library */
+#include "file.h"
+
 /* Data Structures */
 #include "index.h"
 #include "webpage.h"
@@ -34,7 +37,7 @@
 static void parseArgs(char* argv[], char** pageDirectory, char** indexFileName);
 static index_t* indexBuild(const char* indexFileName);
 char** getQuery(FILE* fp);
-void runQuery(char** query, index_t* index, char* pageDirectory);
+int*** runQuery(char** query, index_t* index, char* indexFileName);
 
 /* function to log progress */
 static void logProgress(const int depth, const char* operation, const char* item);
@@ -83,6 +86,9 @@ main(int argc, const char* argv[])
     mem_free(indexFileName);
     exit(INDEX_ERROR);
   }
+
+  /* count the number of pages in the crawler directory. */
+  const int NUMPAGES = pagedir_count(*pageDirectory);
 
 
   /* QUERIES */
@@ -186,7 +192,7 @@ indexBuild(const char* indexFileName)
    * if error opening file, return NULL
    */
   FILE* indexFile;
-  if ( (indexFile = fopen(indexFileName, "w")) == NULL) {
+  if ( (indexFile = fopen(indexFileName, "r")) == NULL) {
     fprintf(stderr, "Error accessing index file: '%s'\n", indexFileName);
 
     /* close input file opened earlier */
@@ -280,15 +286,16 @@ indexBuild(const char* indexFileName)
 char**
 getQuery(FILE* fp)
 {
-
-  assert(fp != NULL);
+  assert(fp != NULL );
   
-  char* rawQuery = mem_malloc_assert(1000*sizeof(char), "Error allocating memory for query");
-
   /* get query */
-  printf("Enter query:\n");
-  fscanf(fp, "%s", &rawQuery);
+  /* if end of file, pass NULL back to caller */
+  char* rawQuery;
+  if ( (rawQuery = file_readLine(fp)) == NULL) {
+    return NULL;
+  }
 
+  /* normalize the query */
   normalizeWord(rawQuery);
 
   char* tokens[] = mem_calloc_assert(strlen(rawQuery), 2*sizeof(char), "Error allocating memory for query tokens.");
@@ -319,6 +326,7 @@ getQuery(FILE* fp)
    * also keep track of the last token.
    */
   while ( (token = strtok(NULL, " ")) != NULL) {
+    
 
     /* if "and" / "or" occur contiguously, query is not valid. */
     if ( (strcmp(token, "and") == 0) || (strcmp(token, "or") == 0) ) {
@@ -355,13 +363,112 @@ getQuery(FILE* fp)
   return tokens;
 }
 
-void
-runQuery(char** query, index_t* index, char* pageDirectory)
+
+char***
+parseQuery(char** query)
+{
+  char*** splitQuery = mem_malloc_assert(2*sizeof(query), "Error allocating memory for parsed query");
+  
+  int grouping = 0;
+  int marker = 0;
+  for(int i=0; ; i++) {
+
+    /* on first NULL (end of query marker), break the loop */
+    if (query[i] == NULL) {
+      break;
+    }
+
+    /* check for "and" sequences */
+    if(strcmp(query[i], "and") == 0) {
+      ;       /* no action needed */
+    }
+
+    /* check for "or" sequences */
+    else if(strcmp(query[i], "or") == 0) {
+      // if 'or', step to next grouping! 
+      grouping++;
+      marker=0;
+    }
+
+    /* general query words: save it */
+    else {
+      strcpy(splitQuery[grouping][marker++], query[i]);
+    }
+  }
+
+  /* mark endpoint with a NULL */
+  splitQuery[grouping+1] = NULL;
+
+  return splitQuery;
+
+}
+
+
+int***
+runQuery(char** query, index_t* index, char* indexFileName)
 {
   /* make sure all parameters are valid */
   assert(query != NULL);
   assert(index != NULL);
-  assert(pageDirectory != NULL);
+  assert(indexFileName != NULL);
 
-  /* parse query
+  /* int [] [] [] */
+  int*** results = mem_malloc_assert(1000*sizeof(int), "Error allocating memory for results in runQuery");
+  int pos = 0;
+  /* parse query */
+  for (int i=1; ; i++) {
+    if (query[i] == NULL) {
+      break;
+    }
+    int** ranks = index_rank(index, query[i], indexFileName);
+    results[pos++] = ranks;    
+  }
+  results[pos+1] = NULL;
+
+  return results;
+}
+
+int**
+intersection(int*** ranks)
+{
+  int** intersection = mem_malloc_assert(sizeof(ranks), "Error allocating memory in intersection");
+  int* keys = intersection[0];
+  int* values = intersection[1];
+
+  for(int i=0; ; i++) {
+    // NULL-terminated query
+    if (ranks[i] == NULL) {
+      break;
+    }
+    if (i = 0) {
+      for (int j=0; ; j++) {
+        if (ranks[i][0][j] == NULL) {
+
+          /* append NULL termination and exit */
+          keys[j] = NULL;
+          values[j] = NULL;
+          break;
+        }
+        keys[j] = ranks[i][0][j];
+        values[j] = ranks[i][1][j];
+      }
+    }
+    else {
+      for (int j=0; ; j++) {
+        if (ranks[i][0][j] == NULL) {
+          break;
+        }
+        int currentKey = ranks[i][0][j];
+        int currentCount = ranks[i][1][j];
+        for (int pair=0; ; pair++) {
+          if (intersection[pair] == NULL) {
+            break;
+          }
+          // if ()
+
+        }
+
+      }
+    }
+  }
 }
