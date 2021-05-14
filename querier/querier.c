@@ -32,15 +32,20 @@
 /* Word library */
 #include "word.h"
 
+#include "query.h"
+
+#include "pagedir.h"
+
 
 /*********** FUNCTION PROTOTYPES *********/
 static void parseArgs(char* argv[], char** pageDirectory, char** indexFileName);
 static index_t* indexBuild(const char* indexFileName);
 char** getQuery(FILE* fp);
-int*** runQuery(char** query, index_t* index, char* indexFileName);
+query_t* runQuery(index_t* index, char* pageDirectory, char*** rawQuery);
+char*** parseQuery(char** query);
 
 /* function to log progress */
-static void logProgress(const int depth, const char* operation, const char* item);
+// static void logProgress(const int depth, const char* operation, const char* item);
 
 
 /************* GLOBAL CONSTANTS ***************/
@@ -50,14 +55,20 @@ static const int INCORRECT_USAGE = 1;
 static const int INVALID_DIR = 2;
 static const int INVALID_FILE = 3;
 static const int INDEX_ERROR = 4;
-static const int INVALID_QUERY = 5;
-
-static const char* __WRONG_QUERY = "?";
+// static const int INVALID_QUERY = 5;
 
 
 int 
-main(int argc, const char* argv[])
+main(int argc, char* argv[])
 {
+  /* QUICK TEST */
+#ifdef QUICKTEST
+  char* testArgs[3] = {"querier", "../data/output/letters-10", "../data/output/letters-10.index"};
+  argc = 3;
+  argv = testArgs;
+#endif
+
+
   /* NORMAL FUNCTIONALITY */  
 
   /* If invalid number of arguments, print usage and error message, exit non-zero. */
@@ -80,7 +91,7 @@ main(int argc, const char* argv[])
 
   /* reconstruct the index */
   index_t* index;
-  if ( (index = indexBuild(indexFileName) == NULL)) {
+  if ( (index = indexBuild(*indexFileName)) == NULL) {
     fprintf(stderr, "Error initializing index");
     mem_free(pageDirectory);
     mem_free(indexFileName);
@@ -88,35 +99,47 @@ main(int argc, const char* argv[])
   }
 
   /* count the number of pages in the crawler directory. */
-  const int NUMPAGES = pagedir_count(*pageDirectory);
+  // const int NUMPAGES = pagedir_count(*pageDirectory);
 
 
   /* QUERIES */
   FILE* fp = stdin;
-  char** query;
-  while ( (query = getQuery(fp)) != NULL) {
+  char** rawQuery;
+  while ((rawQuery = getQuery(fp)) != NULL) { // NULL signifies EOF or error reading from file.
 
-    /* if first token is NULL, no word was entered. */
-    if (query[0] == NULL) {
-      fprintf(stderr, "Error: empty query. Please enter at least one word.");
-      mem_free(query);
+    /* 
+     * if first token is NULL
+     * the entered query was not valid. 
+     * free the returned raw query
+     * and continue to next iteration.
+     */
+    if (rawQuery[0] == NULL) {
+      mem_free(rawQuery);
       continue;
     }
 
-    /* if first token is __WRONG_QUERY, an invalid query was entered. */
-    else if (strcmp(query[0], __WRONG_QUERY) == 0) {
-      fprintf(stderr, "Error: reserved words 'and', 'or' not allowed at start, end, or following each other.");
-      mem_free(query);
-      continue;
+    /* parse the query */
+    char*** parsedQuery = parseQuery(rawQuery);
+
+    /* run the query */
+    query_t* results;
+    if ( (results = runQuery(index, *pageDirectory, parsedQuery)) != NULL) {
+
+      /* index the identified pages per the page directory */
+      query_index(results, *pageDirectory);
+
+      /* print the results */
+      query_print(results, stdout);
+
+      /* delete the results */
+      query_delete(results);
     }
 
-    /* process the query */
-    runQuery(query, index, *pageDirectory);
-
-
+    /* free the current query before proceeding to next */
+    mem_free(parsedQuery);
   }
 
-
+  return SUCCESS;
 }
 
 /**
@@ -167,11 +190,7 @@ parseArgs(char* argv[], char** pageDirectory, char** indexFileName)
     fclose(fp);
     *indexFileName = argv[2];
   }
-
-  /* log progress */
-  logProgress(0, "dir", *pageDirectory);
-  logProgress(0, "index", *indexFileName);
-}
+} /* end of parseArgs() */
 
 /**
  * @function: indexBuild
@@ -281,8 +300,18 @@ indexBuild(const char* indexFileName)
 
   /* return re-created index */
   return index;
-}
 
+} /* end of indexBuild() */
+
+/**
+ * @function: getQuery
+ * @brief: reads in query from FILE*
+ * returns an array of words in the query, in the specific order.
+ * 
+ * @param fp: FILE* wherein to read queries
+ * @return char**: array of words in the query
+ * @return NULL: EOF or error reading from FILE*
+ */
 char**
 getQuery(FILE* fp)
 {
@@ -298,27 +327,31 @@ getQuery(FILE* fp)
   /* normalize the query */
   normalizeWord(rawQuery);
 
-  char* tokens[] = mem_calloc_assert(strlen(rawQuery), 2*sizeof(char), "Error allocating memory for query tokens.");
+  char** tokens = mem_calloc_assert(strlen(rawQuery), 2*sizeof(char), "Error allocating memory for query tokens.");
   int pos = 0;
   char* lastToken = NULL;
 
   /* get first word in query */
   char* token;
   if ( (token = strtok(rawQuery, " ")) == NULL) {
+    fprintf(stderr, "Error: empy query.");
     mem_free(rawQuery);
-    tokens[1] = NULL;
+    tokens[0] = NULL;
     return tokens;
   }
 
   /* first word cannot be "and" or "or" */
   else if (strcmp(token, "and") == 0 || strcmp(token, "or") == 0) {
+    fprintf(stderr, "Error: %s at beginning of word.", token);
     mem_free(rawQuery);
-    tokens[0] == __WRONG_QUERY;
+    tokens[0] = NULL;
     return tokens;
   }
 
-  /* save token */
+  /* save token if valid */
   strcpy(tokens[pos++], token);
+
+  /* track it as last token */
   strcpy(lastToken, token);
 
   /*
@@ -327,13 +360,12 @@ getQuery(FILE* fp)
    */
   while ( (token = strtok(NULL, " ")) != NULL) {
     
-
     /* if "and" / "or" occur contiguously, query is not valid. */
     if ( (strcmp(token, "and") == 0) || (strcmp(token, "or") == 0) ) {
-       if ( (strcmp(lastToken, "and") == 0) || (strcmp(lastToken, "or") == 0) ) {
-         mem_free(lastToken);
-         mem_free(rawQuery);
-        tokens[0] == __WRONG_QUERY;
+      if ( (strcmp(lastToken, "and") == 0) || (strcmp(lastToken, "or") == 0) ) {
+        fprintf(stderr, "Error: '%s' and '%s' not allowed to follow each other in query.", lastToken, token);
+        mem_free(rawQuery);
+        tokens[0] = NULL;
         return tokens;
       }
     }
@@ -343,34 +375,44 @@ getQuery(FILE* fp)
     strcpy(lastToken, token);
   }
 
+  /* 
+   * if last token is "and" or "or",
+   * query is not valid.
+   * return NULL
+   */
   if ( (strcmp(lastToken, "and") == 0) || (strcmp(lastToken, "or") == 0) ) {
-    mem_free(lastToken);
+    fprintf(stderr, "Error: last token in query cannot be '%s'", lastToken);
     mem_free(rawQuery);
-    tokens[0] = __WRONG_QUERY;
+    tokens[0] = NULL;
     return tokens;
   }
 
   /* free the allocated function variables */
-  mem_free(lastToken);
   mem_free(token);
-
-  assert(tokens != NULL);
 
   /* mark end-point of query */
   tokens[pos++] = NULL;
 
   /* return the array of tokens */
   return tokens;
-}
+} /* end of getQuery() */
 
-
+/**
+ * @function: parseQuery
+ * @brief: receives an array of words in a query.
+ * splits the query into "actionable" blocks separated by 'OR' statements.
+ * 
+ * @param query: array of words in a query.
+ * @return char*** array of arrays of words --> parts of the query.
+ */
 char***
 parseQuery(char** query)
 {
+  assert(query != NULL);
   char*** splitQuery = mem_malloc_assert(2*sizeof(query), "Error allocating memory for parsed query");
   
   int grouping = 0;
-  int marker = 0;
+  int pos = 0;
   for(int i=0; ; i++) {
 
     /* on first NULL (end of query marker), break the loop */
@@ -385,90 +427,52 @@ parseQuery(char** query)
 
     /* check for "or" sequences */
     else if(strcmp(query[i], "or") == 0) {
-      // if 'or', step to next grouping! 
+      /* 
+       * if 'or',
+       * NULL-terminate the current grouping
+       * and step to next grouping.
+       */
+      splitQuery[grouping][pos++] = NULL;
       grouping++;
-      marker=0;
+      pos = 0;
     }
 
     /* general query words: save it */
     else {
-      strcpy(splitQuery[grouping][marker++], query[i]);
+      strcpy(splitQuery[grouping][pos++], query[i]);
     }
   }
 
-  /* mark endpoint with a NULL */
+  /* mark endpoints with a NULL */
+  splitQuery[grouping][pos++] = NULL;
   splitQuery[grouping+1] = NULL;
 
+  /* return the 2D array of words */
   return splitQuery;
+} /* end of parseQuery() */
 
-}
-
-
-int***
-runQuery(char** query, index_t* index, char* indexFileName)
+query_t* 
+runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
 {
-  /* make sure all parameters are valid */
-  assert(query != NULL);
-  assert(index != NULL);
-  assert(indexFileName != NULL);
+  /* if any param is NULL, return NULL back to caller. */
+  if ( (index == NULL) || (pageDirectory == NULL) || (rawQuery == NULL)) {
+    return NULL;
+  }
 
-  /* int [] [] [] */
-  int*** results = mem_malloc_assert(1000*sizeof(int), "Error allocating memory for results in runQuery");
-  int pos = 0;
-  /* parse query */
+  /* build initial subQuery */
+  query_t* query = query_build(index, rawQuery[0]);
+
+  /* unionize with builds of subsequent subQueries */
   for (int i=1; ; i++) {
-    if (query[i] == NULL) {
+    if (rawQuery[i] == NULL) {
       break;
     }
-    int** ranks = index_rank(index, query[i], indexFileName);
-    results[pos++] = ranks;    
+    query = query_union(query, query_build(index, rawQuery[i]));
   }
-  results[pos+1] = NULL;
 
-  return results;
-}
+  /* sort the entries in the query results */
+  query_index(query, pageDirectory);
 
-int**
-intersection(int*** ranks)
-{
-  int** intersection = mem_malloc_assert(sizeof(ranks), "Error allocating memory in intersection");
-  int* keys = intersection[0];
-  int* values = intersection[1];
-
-  for(int i=0; ; i++) {
-    // NULL-terminated query
-    if (ranks[i] == NULL) {
-      break;
-    }
-    if (i = 0) {
-      for (int j=0; ; j++) {
-        if (ranks[i][0][j] == NULL) {
-
-          /* append NULL termination and exit */
-          keys[j] = NULL;
-          values[j] = NULL;
-          break;
-        }
-        keys[j] = ranks[i][0][j];
-        values[j] = ranks[i][1][j];
-      }
-    }
-    else {
-      for (int j=0; ; j++) {
-        if (ranks[i][0][j] == NULL) {
-          break;
-        }
-        int currentKey = ranks[i][0][j];
-        int currentCount = ranks[i][1][j];
-        for (int pair=0; ; pair++) {
-          if (intersection[pair] == NULL) {
-            break;
-          }
-          // if ()
-
-        }
-
-      }
-    }
-  }
+  /* return final version of query */
+  return query;
 }
