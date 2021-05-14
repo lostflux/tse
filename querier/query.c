@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "webpage.h"
@@ -20,16 +21,25 @@
 
 #include "query.h"
 
+#include "pagedir.h"
+
+#include "file.h"
+
 
 /*********** Function Prototypes *********/
 static void dubCounters(void* arg, int docID, int count);
 static void intersect(void* arg, int docID, int count);
 static void unite(void* arg, int docID, int count);
+static void sort(void* arg, int docID, int count);
 
 
 
 typedef struct query {
   int numWords;
+  int numPages;
+  int* docIDs;
+  char* pageDirectory;
+  webpage_t** pages;
   counters_t* ctrs;
 } query_t;
 
@@ -44,8 +54,12 @@ query_new()
     return NULL;
   }
 
-  /* initialize numwords to ZERO */
+  /* initialize numwords, numpages to ZERO */
   query->numWords = 0;
+  query->numPages = 0;
+
+  /* initialize pageDirectory to NULL */
+  query->pageDirectory = NULL;
 
   /* initialize counters */
   query->ctrs = counters_new();
@@ -60,6 +74,12 @@ query_delete(query_t* query)
   if (query != NULL) {
     if (query->ctrs != NULL) {
       counters_delete(query->ctrs);
+    }
+    if (query->docIDs != NULL) {
+      mem_free(query->docIDs);
+    }
+    if (query->pages != NULL) {
+      mem_free(query->pages);
     }
     mem_free(query);
   }
@@ -87,7 +107,6 @@ query_build(index_t* index, char** words)
   /* return generated query struct */
   return query;
 }
-
 
 void 
 query_intersection(index_t* index, query_t* query, char* nextWord) {
@@ -187,6 +206,125 @@ query_union(query_t* subQuery1, query_t* subQuery2)
   return query;
 }
 
+void
+query_index(query_t* query, char* pageDirectory)
+{
+  /* buffer to hold sorted docID-value pairs */
+  int** buffer = mem_calloc_assert(200, 2*sizeof(int), "Error allocating memory in query_sort.");
+
+  query->pages = mem_malloc_assert(200, "Error allocating memory in query_sort");
+
+  query->docIDs = mem_calloc_assert(200, sizeof(int), "Error allocating memory in query_sort.");
+
+  /* initialize all values to ZERO */
+  for (int i=0; i<100; i++) {   // assumption: max num of pages = 100
+    buffer[0][i] = 0;           // to hold keys
+    buffer[1][i] = 0;           // to hold values
+  }
+
+  /* iterate through counters to sort calues. */
+  counters_iterate(query->ctrs, buffer, sort);
+
+  /* create counters of sorted values */
+  counters_t* sorted = counters_new();
+  int* keys = buffer[0];
+  int* counts = buffer[1];
+
+  /* index pages, find last index */
+  int lastIndex=0;
+  for (int i=0; ; i++) {
+
+    /* at ZERO key (end of items), break the loop. */
+    if (keys[i] == 0) {
+      break;
+    }
+
+    /* load current page and save it to query */
+    char filepath[strlen(pageDirectory) + 10];
+    if (pageDirectory[strlen(pageDirectory)-1] == '/') {
+      sprintf(filepath, "%d", keys[i]);
+    }
+    else {
+      sprintf(filepath, "/%d", keys[i]);
+    }
+    query->pages[i] = pagedir_load(filepath);
+    query->docIDs[i] = keys[i];
+    lastIndex = i;
+  }
+
+  /* save last index + 1 to be total number of pages */
+  query->numPages = lastIndex + 1;
+
+  /* add in values in the new order */
+  for (int i=lastIndex; i>=0; i--) {
+    counters_set(sorted, keys[i], counts[i]);
+  }
+
+  /* free the buffer */
+  mem_free(buffer);
+
+  /* delete old counters */
+  counters_delete(query->ctrs);
+
+  /* save new counters */
+  query->ctrs = sorted;
+}
+
+void
+query_print(query_t* query, FILE* fp)
+{
+  if (query != NULL && fp != NULL) {
+    webpage_t** pages = query->pages;
+    int* docIDs = query->docIDs;
+    assert(pages != NULL && docIDs != NULL);
+    fprintf(fp, "Matches %d documents (ranked):\n", query->numPages);
+    for (int i = 0; i<query->numPages; i++) {
+      int docID = docIDs[i];
+      int score = counters_get(query->ctrs, docID);
+      char* url = webpage_getURL(pages[i]);
+      fprintf(fp, "score  %d doc %d: %s\n", score, docID, url);
+    }
+  }
+}
+
+
+static void
+sort(void* arg, int docID, int count)
+{
+  if (arg != NULL) {
+
+    /* convert back to 2D array */
+    int** buffer = (int**) arg;
+    int* keys = buffer[0];
+    int* counts = buffer[1];
+
+    /* find size of array */
+    int size;
+    for (int i=0; ; i++) {
+      if (keys[i] == 0) {
+        break;
+      }
+      size = i+1;
+    }
+
+    /* loop through array to find point where values fit in. */
+    for (int i=0; i<size; i++) {
+      if (count > counts[i]) {
+
+        /* shift values after index by 1 to the right. */
+        for (int j=size-1; j>i; j--) {
+          keys[j] = keys[j-1];
+          counts[j] = counts[j-1];
+        }
+
+        /* save in the values */
+        keys[i] = docID;
+        counts[i] = count;
+      }
+    }
+  }
+}
+
 static void
 unite(void* arg, int docID, int count)
 {
@@ -224,8 +362,14 @@ intersect(void* arg, int docID, int count) {
     /* get value in intersection */
     int currentCount = counters_get(intersection, docID);
 
-    /* set to minimum value in the two */
+    /* find minimum value of the two */
     int min = (currentCount < count) ? currentCount : count;
-    counters_set(intersection, docID, min);
+
+    /* if min value is greater than zero, save it. */
+    if (min > 0) {
+      counters_set(intersection, docID, min);
+    }
   }
+
+
 }

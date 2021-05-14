@@ -30,3 +30,9 @@ void query_intersection(index_t* index, query_t* query, char* nextWord);
 
 query_t* query_union(query_t* subQuery1, query_t* subQuery2);
 
+void query_index(query_t* query, char* pageDirectory);
+
+void query_savedir(query_t* query, char* pageDirectory);
+
+void query_print(query_t* query, FILE* fp);
+
