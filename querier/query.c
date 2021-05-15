@@ -43,6 +43,12 @@ typedef struct query {
   counters_t* ctrs;
 } query_t;
 
+counters_t*
+query_getCounters(query_t* query)
+{
+  return query->ctrs;
+}
+
 query_t*
 query_new()
 {
@@ -72,15 +78,15 @@ void
 query_delete(query_t* query)
 {
   if (query != NULL) {
-    if (query->ctrs != NULL) {
-      counters_delete(query->ctrs);
-    }
-    if (query->docIDs != NULL) {
-      mem_free(query->docIDs);
-    }
-    if (query->pages != NULL) {
-      mem_free(query->pages);
-    }
+    // if (query->ctrs != NULL) {
+    //   counters_delete(query->ctrs);
+    // }
+    // if (query->docIDs != NULL) {
+    //   mem_free(query->docIDs);
+    // }
+    // if (query->pages != NULL) {
+    //   mem_free(query->pages);
+    // }
     mem_free(query);
   }
 }
@@ -97,7 +103,7 @@ query_build(index_t* index, char** words)
   char* word = NULL;                            // track current word
   while( (word = words[i]) != NULL) {
 
-    // find the intersection
+    // find the intersection with next word
     query_intersection(index, query, word);
 
     // increment index
@@ -116,13 +122,18 @@ query_intersection(index_t* index, query_t* query, char* nextWord) {
 
     /* find counters of word */
     counters_t* nextCounts = index_find(index, nextWord);
+    printf("Next counts: %s\n", nextWord);
+    counters_print(nextCounts, stdout);
+    printf("\n");
 
     /* 
      * if word does not exist in page (NULL return),
      * set counters in query to NULL.
      */
     if (nextCounts == NULL) {
-      counters_delete(query->ctrs);
+      // if (query->ctrs != NULL) {
+      //   counters_delete(query->ctrs);
+      // }
       query->numWords++;
     }
 
@@ -203,14 +214,22 @@ query_union(query_t* subQuery1, query_t* subQuery2)
   query_delete(subQuery2);
 
   /* return unioned query */
+  printf("UNIONED:\n");
+  counters_print(query->ctrs, stdout);
   return query;
 }
 
 void
 query_index(query_t* query, char* pageDirectory)
 {
+  printf("START QUERY INDEX\n");
+  counters_print(query->ctrs, stdout);
+  printf("\n");
   /* buffer to hold sorted docID-value pairs */
-  int** buffer = mem_calloc_assert(200, 2*sizeof(int), "Error allocating memory in query_sort.");
+  int** buffer = mem_calloc_assert(2, 200*sizeof(int), "Error allocating memory in query_sort.");
+
+  buffer[0] = mem_calloc(100, sizeof(int));
+  buffer[1] = mem_calloc(100, sizeof(int));
 
   query->pages = mem_malloc_assert(200, "Error allocating memory in query_sort");
 
@@ -224,6 +243,20 @@ query_index(query_t* query, char* pageDirectory)
 
   /* iterate through counters to sort calues. */
   counters_iterate(query->ctrs, buffer, sort);
+
+  printf("FINISH SORTING INDEX\n");
+  for (int i=0; i<100; i++) {   // assumption: max num of pages = 100
+    printf("%d ", buffer[0][i]);           // to hold keys
+  }
+  printf("\n");
+  for (int i=0; i<100; i++) {   // assumption: max num of pages = 100
+    printf("%d ", buffer[1][i]);           // to hold keys
+  }
+  printf("\n");
+
+  
+  counters_print(query->ctrs, stdout);
+  printf("\n");
 
   /* create counters of sorted values */
   counters_t* sorted = counters_new();
@@ -242,12 +275,14 @@ query_index(query_t* query, char* pageDirectory)
     /* load current page and save it to query */
     char filepath[strlen(pageDirectory) + 10];
     if (pageDirectory[strlen(pageDirectory)-1] == '/') {
-      sprintf(filepath, "%d", keys[i]);
+      sprintf(filepath, "%s%d", pageDirectory, keys[i]);
     }
     else {
-      sprintf(filepath, "/%d", keys[i]);
+      sprintf(filepath, "%s/%d", pageDirectory, keys[i]);
     }
-    query->pages[i] = pagedir_load(filepath);
+    printf("%s\n", filepath);
+    webpage_t* page = pagedir_load(filepath);
+    query->pages[i] = page;
     query->docIDs[i] = keys[i];
     lastIndex = i;
   }
@@ -259,6 +294,9 @@ query_index(query_t* query, char* pageDirectory)
   for (int i=lastIndex; i>=0; i--) {
     counters_set(sorted, keys[i], counts[i]);
   }
+  printf("SORTED INDEX\n");
+  counters_print(sorted, stdout);
+  printf("\n");
 
   /* free the buffer */
   mem_free(buffer);
@@ -299,7 +337,7 @@ sort(void* arg, int docID, int count)
     int* counts = buffer[1];
 
     /* find size of array */
-    int size;
+    int size = 0;
     for (int i=0; ; i++) {
       if (keys[i] == 0) {
         break;
@@ -308,7 +346,7 @@ sort(void* arg, int docID, int count)
     }
 
     /* loop through array to find point where values fit in. */
-    for (int i=0; i<size; i++) {
+    for (int i=0; i<=size; i++) {
       if (count > counts[i]) {
 
         /* shift values after index by 1 to the right. */
@@ -335,9 +373,10 @@ unite(void* arg, int docID, int count)
     /* get current count of docID in counters */
     int currentCount = counters_get(ctrs, docID);
 
-    /* save sums to counters */
-    int total = currentCount + count;
-    counters_set(ctrs, docID, total);
+    /* save max to counters */
+    int max;
+    max = (currentCount > count) ? currentCount : count;
+    counters_set(ctrs, docID, max);
   }
 }
 
@@ -367,7 +406,15 @@ intersect(void* arg, int docID, int count) {
 
     /* if min value is greater than zero, save it. */
     if (min > 0) {
+      printf("ORIGINAL: ");
+      counters_print(intersection, stdout);
+      printf("\n");
+
       counters_set(intersection, docID, min);
+
+      printf("UPDATED: ");
+      counters_print(intersection, stdout);
+      printf("\n");
     }
   }
 

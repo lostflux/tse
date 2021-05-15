@@ -36,3 +36,4 @@ void query_savedir(query_t* query, char* pageDirectory);
 
 void query_print(query_t* query, FILE* fp);
 
+counters_t* query_getCounters(query_t* query);

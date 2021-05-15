@@ -3,7 +3,7 @@
 # Amittai J. Wekesa, May 2021
 
 # Flag to print indexer progress
-TESTFLAGS=-DLOGPROGRESS -DQUICKTEST
+TESTFLAGS=-DQUICKTEST
 
 # Testing Programs
 # INDEXTEST=indextest
@@ -31,12 +31,12 @@ all:
 	
 # program  (querier)
 $(PROG): $(OBJS) $(LLIBS) 	
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o $@
 	# rm -f $(OBJS)
 
 
 # indexer object file
-querier.o: querier.c query.h $(LLIBS)
+querier.o: querier.c query.o $(LLIBS)
 
 query.o: query.h
 
@@ -52,11 +52,12 @@ query.o: query.h
 
 
 # test run (rebuilds crawler and generates files)
-test: query.h querier.c $(LLIBS) 
-	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indexer
-	printf "\nBuilding crawler directories... ... ...\n\n"
-	make test -C ../crawler
-	bash -v ./testing.sh
+test: querier.c query.o $(LLIBS) 
+	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o querier
+	# ./querier
+	# printf "\nBuilding crawler directories... ... ...\n\n"
+	# make test -C ../crawler
+	# bash -v ./testing.sh
 
 
 # indextest -- unit test for index data-structure
@@ -69,7 +70,7 @@ indextest: indextest.c $(LLIBS)
 clean:
 	rm -f core *core.*
 	rm -f $(PROG) *~ *.o
-	rm -f $(INDEXTEST) *~ *.o
+	# rm -f $(INDEXTEST) *~ *.o
 
 
 # check ./indexer for memory usage and leaks

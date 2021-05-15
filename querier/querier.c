@@ -63,11 +63,10 @@ main(int argc, char* argv[])
 {
   /* QUICK TEST */
 #ifdef QUICKTEST
-  char* testArgs[3] = {"querier", "../data/output/letters-10", "../data/output/letters-10.index"};
+  char* testArgs[3] = {"querier", "../data/output/toscrape-1", "../data/output/toscrape-1.index"};
   argc = 3;
   argv = testArgs;
 #endif
-
 
   /* NORMAL FUNCTIONALITY */  
 
@@ -98,14 +97,10 @@ main(int argc, char* argv[])
     exit(INDEX_ERROR);
   }
 
-  /* count the number of pages in the crawler directory. */
-  // const int NUMPAGES = pagedir_count(*pageDirectory);
-
-
   /* QUERIES */
-  FILE* fp = stdin;
+  // FILE* fp = stdin;
   char** rawQuery;
-  while ((rawQuery = getQuery(fp)) != NULL) { // NULL signifies EOF or error reading from file.
+  while ((rawQuery = getQuery(stdin)) != NULL) { // NULL signifies EOF or error reading from file.
 
     /* 
      * if first token is NULL
@@ -124,6 +119,8 @@ main(int argc, char* argv[])
     /* run the query */
     query_t* results;
     if ( (results = runQuery(index, *pageDirectory, parsedQuery)) != NULL) {
+
+      query_print(results, stdout);
 
       /* index the identified pages per the page directory */
       query_index(results, *pageDirectory);
@@ -180,7 +177,7 @@ parseArgs(char* argv[], char** pageDirectory, char** indexFileName)
    * print an error message and exit.
    */
   FILE* fp;
-  if ((fp = fopen(argv[2], "w")) == NULL) {
+  if ((fp = fopen(argv[2], "r")) == NULL) {
     fprintf(stderr, "Invalid index file name and/or directory.\n");
     mem_free(pageDirectory);
     mem_free(indexFileName);
@@ -213,9 +210,6 @@ indexBuild(const char* indexFileName)
   FILE* indexFile;
   if ( (indexFile = fopen(indexFileName, "r")) == NULL) {
     fprintf(stderr, "Error accessing index file: '%s'\n", indexFileName);
-
-    /* close input file opened earlier */
-    fclose(indexFile);
     return NULL;
   }
   /* log progress */
@@ -226,6 +220,7 @@ indexBuild(const char* indexFileName)
    */
   index_t* index;
   if ( (index = index_new()) == NULL) {
+    fclose(indexFile);
     return NULL;
   }
 
@@ -235,7 +230,7 @@ indexBuild(const char* indexFileName)
   int pos = 0;                // track position ([x]'th word) in current sentence
 
   while ( (rawText = file_readWord(indexFile) ) != NULL) {
-
+    
     /* if word has alphabetical characters */
     if (isalpha(rawText[0]) != 0) {
 
@@ -324,17 +319,19 @@ getQuery(FILE* fp)
     return NULL;
   }
 
+  printf("%s\n", rawQuery);
+
   /* normalize the query */
   normalizeWord(rawQuery);
 
-  char** tokens = mem_calloc_assert(strlen(rawQuery), 2*sizeof(char), "Error allocating memory for query tokens.");
+  char** tokens = mem_calloc_assert(strlen(rawQuery), 5*sizeof(char), "Error allocating memory for query tokens.\n");
   int pos = 0;
-  char* lastToken = NULL;
+  char* lastToken = mem_calloc(100, sizeof(char));
 
   /* get first word in query */
   char* token;
   if ( (token = strtok(rawQuery, " ")) == NULL) {
-    fprintf(stderr, "Error: empy query.");
+    fprintf(stderr, "Error: empty query.\n");
     mem_free(rawQuery);
     tokens[0] = NULL;
     return tokens;
@@ -342,14 +339,15 @@ getQuery(FILE* fp)
 
   /* first word cannot be "and" or "or" */
   else if (strcmp(token, "and") == 0 || strcmp(token, "or") == 0) {
-    fprintf(stderr, "Error: %s at beginning of word.", token);
+    fprintf(stderr, "Error: '%s' at beginning of query.\n", token);
     mem_free(rawQuery);
     tokens[0] = NULL;
     return tokens;
   }
 
   /* save token if valid */
-  strcpy(tokens[pos++], token);
+  tokens[pos++] = mem_malloc(sizeof(token));
+  strcpy(tokens[pos-1], token);
 
   /* track it as last token */
   strcpy(lastToken, token);
@@ -363,7 +361,7 @@ getQuery(FILE* fp)
     /* if "and" / "or" occur contiguously, query is not valid. */
     if ( (strcmp(token, "and") == 0) || (strcmp(token, "or") == 0) ) {
       if ( (strcmp(lastToken, "and") == 0) || (strcmp(lastToken, "or") == 0) ) {
-        fprintf(stderr, "Error: '%s' and '%s' not allowed to follow each other in query.", lastToken, token);
+        fprintf(stderr, "Error: '%s' and '%s' not allowed to follow each other in query.\n", lastToken, token);
         mem_free(rawQuery);
         tokens[0] = NULL;
         return tokens;
@@ -371,7 +369,8 @@ getQuery(FILE* fp)
     }
 
     /* else, copy the word into appropriate position and continue */
-    strcpy(tokens[pos++], token);
+    tokens[pos++] = mem_malloc(sizeof(token));
+    strcpy(tokens[pos-1], token);
     strcpy(lastToken, token);
   }
 
@@ -381,7 +380,7 @@ getQuery(FILE* fp)
    * return NULL
    */
   if ( (strcmp(lastToken, "and") == 0) || (strcmp(lastToken, "or") == 0) ) {
-    fprintf(stderr, "Error: last token in query cannot be '%s'", lastToken);
+    fprintf(stderr, "Error: '%s' at end of query.\n", lastToken);
     mem_free(rawQuery);
     tokens[0] = NULL;
     return tokens;
@@ -392,6 +391,14 @@ getQuery(FILE* fp)
 
   /* mark end-point of query */
   tokens[pos++] = NULL;
+
+  for (int i = 0 ; ; i++) {
+    if (tokens[i] == NULL) {
+      break;
+    }
+
+    printf("TOKEN %d: %s\n", i, tokens[i]);
+  }
 
   /* return the array of tokens */
   return tokens;
@@ -409,10 +416,11 @@ char***
 parseQuery(char** query)
 {
   assert(query != NULL);
-  char*** splitQuery = mem_malloc_assert(2*sizeof(query), "Error allocating memory for parsed query");
+  char*** splitQuery = mem_calloc_assert(2, sizeof(query), "Error allocating memory for parsed query.\n");
   
   int grouping = 0;
   int pos = 0;
+
   for(int i=0; ; i++) {
 
     /* on first NULL (end of query marker), break the loop */
@@ -439,7 +447,13 @@ parseQuery(char** query)
 
     /* general query words: save it */
     else {
-      strcpy(splitQuery[grouping][pos++], query[i]);
+      if (splitQuery[grouping] == NULL) {
+        splitQuery[grouping] = mem_malloc(sizeof(query));
+      }
+      splitQuery[grouping][pos++] = mem_malloc(sizeof(query[i]));
+      char* slot = splitQuery[grouping][pos-1];
+      char* currentWord = query[i];
+      strcpy(slot, currentWord);
     }
   }
 
@@ -461,6 +475,7 @@ runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
 
   /* build initial subQuery */
   query_t* query = query_build(index, rawQuery[0]);
+  // counters_print(query_getCounters(query), stdout);
 
   /* unionize with builds of subsequent subQueries */
   for (int i=1; ; i++) {
@@ -468,10 +483,17 @@ runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
       break;
     }
     query = query_union(query, query_build(index, rawQuery[i]));
+    printf("from querier: \n");
+    counters_print(query_getCounters(query), stdout);
+    printf("\n");
   }
 
   /* sort the entries in the query results */
   query_index(query, pageDirectory);
+
+  printf("from querier: \n");
+  counters_print(query_getCounters(query), stdout);
+  printf("\n");
 
   /* return final version of query */
   return query;
