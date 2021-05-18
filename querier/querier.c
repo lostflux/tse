@@ -252,7 +252,7 @@ getQuery(FILE* fp)
   normalizeWord(rawQuery);
 
   /* to hold split sub-queries */
-  char** tokens = mem_calloc_assert(strlen(rawQuery), 5*sizeof(char), "Error allocating memory for query tokens.\n");
+  char** tokens = mem_calloc_assert(2*strlen(rawQuery), 5*sizeof(char), "Error allocating memory for query tokens.\n");
   
   /* track position in subquery */
   int pos = 0;
@@ -350,7 +350,7 @@ parseQuery(char** query)
 {
   assert(query != NULL);
   /* alloc memory for split query */
-  char*** splitQuery = mem_calloc_assert(2, sizeof(query), "Error allocating memory for parsed query.\n");
+  char*** splitQuery = mem_calloc_assert(2, 2*sizeof(query), "Error allocating memory for parsed query.\n");
   int grouping = 0;
   int pos = 0;
 
@@ -378,7 +378,7 @@ parseQuery(char** query)
       pos = 0;
     }
 
-    /* general query words: save it */
+    /* general query word: save it */
     else {
       if (splitQuery[grouping] == NULL) {
         splitQuery[grouping] = mem_malloc(5*sizeof(query));
@@ -449,7 +449,7 @@ runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
     }
 
     /* free subQ */
-    mem_free(subQuery);
+    // mem_free(subQuery);
   }
 
   /* sort the entries in the query results and load relevant data
