@@ -23,7 +23,7 @@
 /* The fileno() function is provided by stdio,
  * but for some reason not declared by stdio.h, so declare here.
  */
-int fileno(FILE *stream);
+int fileno(FILE* stream);
 
 /* memory library */
 #include "mem.h"
@@ -452,7 +452,9 @@ runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
     mem_free(subQuery);
   }
 
-  /* sort the entries in the query results and load relevant data */
+  /* sort the entries in the query results and load relevant data
+     print reuslts
+     and delete the query */
   if (query != NULL) {
     query_index(query, pageDirectory);
     query_print(query, stdout);
