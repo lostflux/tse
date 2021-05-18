@@ -54,6 +54,10 @@ typedef struct query {
   counters_t* ctrs;
 } query_t;
 
+
+
+
+
 /*
  * getter method
  */
@@ -62,6 +66,9 @@ query_getCounters(query_t* query)
 {
   return query->ctrs;
 }
+
+
+
 
 /**
  * @brief Constructor
@@ -95,6 +102,9 @@ query_new()
   return query;
 }
 
+
+
+
 /**
  * @brief deconstructor
  * 
@@ -122,6 +132,9 @@ query_delete(query_t* query)
     mem_free(query);
   }
 }
+
+
+
 
 /**
  * @brief: assembles the results of a specific word's occurrence in the index.
@@ -171,6 +184,9 @@ query_build(index_t* index, char** subQuery)
   /* index is NULL or subQ is NULL; return NULL */
   return NULL;  
 }
+
+
+
 
 /**
  * @brief: calculates the intersection of two queries in the index.
@@ -227,6 +243,9 @@ query_intersection(index_t* index, query_t* query, char* nextWord) {
   }
 }
 
+
+
+
 /**
  * @brief: function to build a union of the results of two subqueries.
  * This function also deletes the input subqueries after computing their union.
@@ -275,6 +294,9 @@ query_union(query_t* subQuery1, query_t* subQuery2)
   /* return unioned query */
   return query;
 }
+
+
+
 
 /**
  * @brief: merge the query results with data from the index and pages.
@@ -356,6 +378,9 @@ query_index(query_t* query, char* pageDirectory)
   mem_free(buffer);
 }
 
+
+
+
 /**
  * @brief: prints the results held in a query struct.
  * 
@@ -365,13 +390,22 @@ query_index(query_t* query, char* pageDirectory)
 void
 query_print(query_t* query, FILE* fp)
 {
+  /* make sure query and file pointers are valid */
   if (query != NULL && fp != NULL) {
+
+    /* get array of pages, docIDs */
     webpage_t** pages = query->pages;
     int* docIDs = query->docIDs;
     if (pages != NULL && docIDs != NULL) {
+
+      /* if no pages matched, print no pages */
       if (query->numPages == 0) {
         fprintf(fp, "Matches %d documents.\n", query->numPages);
       }
+
+      /* else, print the number of pages found
+       and each page's number of matches, 
+       document ID, URL */
       else{
         fprintf(fp, "Matches %d documents (ranked):\n", query->numPages);
         for (int i = 0; i<query->numPages; i++) {
@@ -379,13 +413,16 @@ query_print(query_t* query, FILE* fp)
           if (docID > 0) {
             int score = counters_get(query->ctrs, docID);
             char* url = webpage_getURL(pages[i]);
-            fprintf(fp, "score  %d doc %d: %s\n", score, docID, url);
+            fprintf(fp, "score %3d doc %3d: %s\n", score, docID, url);
           }
         }
       }
     }
   }
 }
+
+
+
 
 /**
  * @brief: sorts a duo of arrays containing key-value pairs
@@ -432,6 +469,9 @@ sort(void* arg, int docID, int count)
   }
 }
 
+
+
+
 /**
  * @brief: create a union of two counters sets.
  * receives key-value pairs from one counters set
@@ -457,6 +497,9 @@ unite(void* arg, int docID, int count)
   }
 }
 
+
+
+
 /**
  * @brief: create a copy of a counters:
  * Receives key-value pairs and saves them in the counter.
@@ -477,6 +520,9 @@ dubCounters(void* arg, int docID, int count)
   }
 }
 
+
+
+
 /**
  * @brief: reset values in counters to zero
  * 
@@ -495,6 +541,9 @@ setZero(void* arg, int docID, int count)
     counters_set(ctrs, docID, 0);
   }
 }
+
+
+
 
 /**
  * @brief: builds an intersection of two counts.

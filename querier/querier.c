@@ -19,6 +19,12 @@
 #include <string.h>
 #include <assert.h>
 
+#include <unistd.h>  // add this to your list of includes
+/* The fileno() function is provided by stdio,
+ * but for some reason not declared by stdio.h, so declare here.
+ */
+int fileno(FILE *stream);
+
 /* memory library */
 #include "mem.h"
 
@@ -45,6 +51,8 @@ char** getQuery(FILE* fp);
 char*** parseQuery(char** query);
 void runQuery(index_t* index, char* pageDirectory, char*** rawQuery);
 
+static void prompt(void);
+
 /* function to log progress */
 // static void logProgress(const int depth, const char* operation, const char* item);
 
@@ -57,6 +65,8 @@ static const int INVALID_DIR = 2;
 static const int INVALID_FILE = 3;
 static const int INDEX_ERROR = 4;
 // static const int INVALID_QUERY = 5;
+
+
 
 
 int 
@@ -99,8 +109,10 @@ main(int argc, char* argv[])
   }
 
   /* QUERIES */
-  // FILE* fp = stdin;
   char** rawQuery;
+
+  /* prompt for first query */
+  prompt();
   while ((rawQuery = getQuery(stdin)) != NULL) { // NULL signifies EOF or error reading from file.
 
     /* 
@@ -117,27 +129,17 @@ main(int argc, char* argv[])
     /* parse the query */
     char*** parsedQuery = parseQuery(rawQuery);
 
+    /* run the query */
     if (parsedQuery != NULL) {
       runQuery(index, *pageDirectory, parsedQuery);
     }
 
-    /* run the query */
-    // query_t* results;
-    // if ( (results = runQuery(index, *pageDirectory, parsedQuery)) != NULL) {
-
-    //   /* print the results */
-    //   query_print(results, stdout);
-
-    //   /* delete the results */
-    //   query_delete(results);
-    // }
-    // else {
-    //   fprint(stderr, "An error occured running the query.");
-    // }
-
     /* free the current query before proceeding to next */
     mem_free(parsedQuery);
-  }
+
+    /* prompt for next query */
+    prompt();
+  } /* end of loop */
 
   /* EXITING */
 
@@ -150,6 +152,9 @@ main(int argc, char* argv[])
 
   return SUCCESS;
 }
+
+
+
 
 /**
  * @function: parseArgs
@@ -200,6 +205,8 @@ parseArgs(char* argv[], char** pageDirectory, char** indexFileName)
     *indexFileName = argv[2];
   }
 } /* end of parseArgs() */
+
+
 
 
 /**
@@ -327,6 +334,9 @@ getQuery(FILE* fp)
   return tokens;
 } /* end of getQuery() */
 
+
+
+
 /**
  * @function: parseQuery
  * @brief: receives an array of words in a query.
@@ -394,6 +404,9 @@ parseQuery(char** query)
   return splitQuery;
 } /* end of parseQuery() */
 
+
+
+
 /**
  * @brief: function to evaluate split tokens in a query and assemble a query object. 
  * 
@@ -444,5 +457,17 @@ runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
     query_index(query, pageDirectory);
     query_print(query, stdout);
     query_delete(query);
+  }
+}
+
+
+
+
+static void
+prompt(void)
+{
+  // print a prompt iff stdin is a tty (terminal)
+  if (isatty(fileno(stdin))) {
+    printf("Query? ");
   }
 }
