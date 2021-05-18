@@ -26,9 +26,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <ctype.h>
+#include <string.h>
 
 /* Memory library */
 #include "mem.h"
+
+/* file handler */
+#include "file.h"
+
+/* word handler */
+#include "word.h"
 
 /* Data Structures */
 #include "hashtable.h"
@@ -141,6 +149,20 @@ counters_t* index_find(index_t* index, char* word);
  * Returns: none.
  */
 void index_delete(index_t* index);
+
+/**
+ * @function: index_load
+ * @brief: receives an address to a saved index file and loads the data into an index_t struct.
+ * The file must be available for reading. 
+ * 
+ * Inputs:
+ * @param pageDirectory: page directory to search for saved webpages
+ * 
+ * Outputs:
+ * @return index_t*: a pointer to the created index struct
+ * @return NULL: Error reading from file, creating struct, or some other error occurred.
+ */
+index_t* index_load(const char* indexFileName);
 
 // int** index_rank(index_t* index, char* word, char* indexFileName);
 

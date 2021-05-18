@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <ctype.h>
+#include <string.h>
 
 /* Memory library */
 #include "mem.h"
@@ -29,6 +31,12 @@
 #include "hashtable.h"
 #include "counters.h"
 #include "set.h"
+
+/* file handler */
+#include "file.h"
+
+/* word handler */
+#include "word.h"
 
 /* self */
 #include "index.h"
@@ -228,6 +236,116 @@ index_delete(index_t* index)
   // free the memory allocated to the index object.
   mem_free(index);
 }
+
+/**
+ * @function: index_load
+ * @brief: See index.h for full documentation.
+ * 
+ * Inputs:
+ * @param pageDirectory: page directory to search for saved webpages
+ * 
+ * Outputs:
+ * @return index_t*: a pointer to the created index struct
+ * @return NULL: Error reading from file, creating struct, or some other error occurred.
+ */
+index_t*
+index_load(const char* indexFileName)
+{
+
+  /*
+   * if error opening file, return NULL
+   */
+  FILE* indexFile;
+  if ( (indexFile = fopen(indexFileName, "r")) == NULL) {
+    fprintf(stderr, "Error accessing index file: '%s'\n", indexFileName);
+    return NULL;
+  }
+  /* log progress */
+  // logProgress(0, "output", output);
+
+  /*
+   * If error initializing index, return NULL
+   */
+  index_t* index;
+  if ( (index = index_new()) == NULL) {
+    fclose(indexFile);
+    return NULL;
+  }
+
+  char* rawText = NULL;       // track text found from source file
+  char* foundWord = NULL;     // track actual words that are found
+  int docID; int count;       // track document ID and counts that are found 
+  int pos = 0;                // track position ([x]'th word) in current sentence
+
+  while ( (rawText = file_readWord(indexFile) ) != NULL) {
+    
+    /* if word has alphabetical characters */
+    if (isalpha(rawText[0]) != 0) {
+
+      /* free previously found word */
+      if (foundWord != NULL) {
+        mem_free(foundWord);
+      }
+
+      //reset position to zero
+      pos = 0;
+
+      // normalize the word
+      normalizeWord(rawText);
+
+      // allocate word, copy text found
+      foundWord = mem_calloc_assert(strlen(rawText), 2*sizeof(char), "Error allocating memory for found word.");
+
+      // copy found word
+      strcpy(foundWord, rawText);
+
+      /* log progress */
+      // logProgress(2, "word", foundWord);
+
+      // increment position in sentence.
+      pos++;
+    }
+    else if (pos % 2 == 1) {
+      
+      // parse document ID
+      docID = atoi(rawText);
+
+      // increment position in sentence.
+      pos++;
+    }
+    /* if count value, insert pair into index */
+    else {
+      
+      // parse count
+      count = atoi(rawText);
+
+      // insert word, document ID, count into the index
+      index_set(index, foundWord, docID, count);
+
+      // increment position in the sentence
+      pos++;
+    }
+
+    /* free the raw text */
+    mem_free(rawText);
+  }
+
+  /*
+   * at end of document (if read was successful), 
+   * free last found valid word 
+   */
+  if (foundWord != NULL) {
+    mem_free(foundWord);
+  }
+
+  // close the file
+  fclose(indexFile);
+
+  /* return re-created index */
+  return index;
+
+} /* end of index_load() */
+
 
 
 
