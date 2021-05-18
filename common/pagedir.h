@@ -79,4 +79,19 @@ bool pagedir_check(char* dirName);
  */
 webpage_t* pagedir_load(const char* filepath);
 
+/**
+ * @function: pagedir_count
+ * @brief: counts the number of valid webpages
+ * saved in a page directory
+ * 
+ * DISCLAIMER: This function does not check for validity of the directory
+ * as a crawler directory.
+ * The caller is responsible for having ascertained validity.
+ * 
+ * @param pageDirectory: path to a valid crawler directory
+ * 
+ * @return int: number of valid pages in the crawler directory
+ */
+int pagedir_count(const char* pageDirectory);
+
 #endif /*__PAGEDIR_H */

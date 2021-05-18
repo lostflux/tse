@@ -148,3 +148,57 @@ pagedir_load(const char* path)
   }
 }
 
+
+/**
+ * @function: pagedir_count
+ * @brief: counts the number of valid webpages
+ * saved in a page directory
+ * 
+ * DISCLAIMER: This function does not check for validity of the directory
+ * as a crawler directory.
+ * The caller is responsible for having ascertained validity.
+ * 
+ * @param pageDirectory: path to a valid crawler directory
+ * 
+ * @return int: number of valid pages in the crawler directory
+ */
+int
+pagedir_count(const char* pageDirectory)
+{
+
+  /*
+   * Step through docID's from 1
+   * since docID's are assigned incrementally by the crawler.
+   * Once a non-existent file is reached, break.
+   */
+  for (int docID=1; ; docID++) {
+
+    // Initialize extension.
+    char extension[20];
+
+    // Create extension (varies on presence/absence of a slash at end) 
+    if (pageDirectory[strlen(pageDirectory)-1] == '/') {
+      sprintf(extension, "%d", docID);
+    }
+    else {
+      sprintf(extension, "%s%d", "/", docID);
+    }
+
+    // append extension
+    char directory[strlen(pageDirectory) + strlen(extension)];
+    sprintf(directory, "%s%s", pageDirectory, extension);
+
+    // load webpage from address. If null, break loop.
+    webpage_t* page;
+    if ((page = pagedir_load(directory)) != NULL) {
+
+      // delete the page
+      webpage_delete(page);
+    }
+
+    // once pages are out of range, return last successful page ID
+    else {
+      return docID-1;
+    }
+  }
+}

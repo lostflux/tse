@@ -26,9 +26,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <ctype.h>
+#include <string.h>
 
 /* Memory library */
 #include "mem.h"
+
+/* file handler */
+#include "file.h"
+
+/* word handler */
+#include "word.h"
 
 /* Data Structures */
 #include "hashtable.h"
@@ -117,6 +125,19 @@ void index_iterate(index_t* index, void* arg, void (*itemfunc)(void* arg, const 
 void index_print (index_t* index, FILE* fp);
 
 /**
+ * @function: index_find
+ * @brief: searches for a key in the index. 
+ * 
+ * @param index: the index wherein to search.
+ * @param word: the word to search for.
+ * 
+ * Returns:
+ * @return: counters_t* ctrs -> counters matching word.
+ * @return: NULL -> word (key) does not exist in the index. 
+ */
+counters_t* index_find(index_t* index, char* word);
+
+/**
  * @function: index_delete()
  * @brief: Deletes an index object created using index_new().
  * No actions are taken if pointer to index item is NULL.
@@ -128,5 +149,22 @@ void index_print (index_t* index, FILE* fp);
  * Returns: none.
  */
 void index_delete(index_t* index);
+
+/**
+ * @function: index_load
+ * @brief: receives an address to a saved index file and loads the data into an index_t struct.
+ * The file must be available for reading. 
+ * 
+ * Inputs:
+ * @param pageDirectory: page directory to search for saved webpages
+ * 
+ * Outputs:
+ * @return index_t*: a pointer to the created index struct
+ * @return NULL: Error reading from file, creating struct, or some other error occurred.
+ */
+index_t* index_load(const char* indexFileName);
+
+// int** index_rank(index_t* index, char* word, char* indexFileName);
+
 
 #endif /* __INDEX_H */

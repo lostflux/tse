@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <ctype.h>
+#include <string.h>
 
 /* Memory library */
 #include "mem.h"
@@ -30,6 +32,12 @@
 #include "counters.h"
 #include "set.h"
 
+/* file handler */
+#include "file.h"
+
+/* word handler */
+#include "word.h"
+
 /* self */
 #include "index.h"
 
@@ -37,6 +45,7 @@
 static void printWord(void* arg, const char* key, void* item);
 static void printCounts(void* arg, int key, int count);
 static void deleteCounter(void* arg);
+// static void rankPages(void* arg, int key, int value);
 
 
 
@@ -105,6 +114,31 @@ index_insert(index_t* index, char* word, int docID)
     hashtable_insert(index->ht, word, ctrs);
   }
 }
+
+/**
+ * @function: index_find
+ * @brief: searches for a key in the index. 
+ * 
+ * @param index: the index wherein to search.
+ * @param word: the word to search for.
+ * 
+ * Returns:
+ * @return: counters_t* ctrs -> counters matching word.
+ * @return: NULL -> word (key) does not exist in the index. 
+ */
+counters_t*
+index_find(index_t* index, char* word)
+{
+  /* make sure parameters are valid */
+  assert(index != NULL && word != NULL);
+
+  /*
+   * return whatever matches the word in the hashtable.
+   * if word does not exist, hashtable_find returns NULL.
+   */
+  return hashtable_find(index->ht, word);
+}
+
 
 /**
  * @function: index_set
@@ -203,6 +237,116 @@ index_delete(index_t* index)
   mem_free(index);
 }
 
+/**
+ * @function: index_load
+ * @brief: See index.h for full documentation.
+ * 
+ * Inputs:
+ * @param pageDirectory: page directory to search for saved webpages
+ * 
+ * Outputs:
+ * @return index_t*: a pointer to the created index struct
+ * @return NULL: Error reading from file, creating struct, or some other error occurred.
+ */
+index_t*
+index_load(const char* indexFileName)
+{
+
+  /*
+   * if error opening file, return NULL
+   */
+  FILE* indexFile;
+  if ( (indexFile = fopen(indexFileName, "r")) == NULL) {
+    fprintf(stderr, "Error accessing index file: '%s'\n", indexFileName);
+    return NULL;
+  }
+  /* log progress */
+  // logProgress(0, "output", output);
+
+  /*
+   * If error initializing index, return NULL
+   */
+  index_t* index;
+  if ( (index = index_new()) == NULL) {
+    fclose(indexFile);
+    return NULL;
+  }
+
+  char* rawText = NULL;       // track text found from source file
+  char* foundWord = NULL;     // track actual words that are found
+  int docID; int count;       // track document ID and counts that are found 
+  int pos = 0;                // track position ([x]'th word) in current sentence
+
+  while ( (rawText = file_readWord(indexFile) ) != NULL) {
+    
+    /* if word has alphabetical characters */
+    if (isalpha(rawText[0]) != 0) {
+
+      /* free previously found word */
+      if (foundWord != NULL) {
+        mem_free(foundWord);
+      }
+
+      //reset position to zero
+      pos = 0;
+
+      // normalize the word
+      normalizeWord(rawText);
+
+      // allocate word, copy text found
+      foundWord = mem_calloc_assert(strlen(rawText), 2*sizeof(char), "Error allocating memory for found word.");
+
+      // copy found word
+      strcpy(foundWord, rawText);
+
+      /* log progress */
+      // logProgress(2, "word", foundWord);
+
+      // increment position in sentence.
+      pos++;
+    }
+    else if (pos % 2 == 1) {
+      
+      // parse document ID
+      docID = atoi(rawText);
+
+      // increment position in sentence.
+      pos++;
+    }
+    /* if count value, insert pair into index */
+    else {
+      
+      // parse count
+      count = atoi(rawText);
+
+      // insert word, document ID, count into the index
+      index_set(index, foundWord, docID, count);
+
+      // increment position in the sentence
+      pos++;
+    }
+
+    /* free the raw text */
+    mem_free(rawText);
+  }
+
+  /*
+   * at end of document (if read was successful), 
+   * free last found valid word 
+   */
+  if (foundWord != NULL) {
+    mem_free(foundWord);
+  }
+
+  // close the file
+  fclose(indexFile);
+
+  /* return re-created index */
+  return index;
+
+} /* end of index_load() */
+
+
 
 
 /********** Static functions definitions ************/
@@ -280,3 +424,88 @@ deleteCounter(void* arg)
   counters_t* ctrs = (counters_t*) arg;
   counters_delete(ctrs);
 }
+
+// /**
+//  * @function: rankPages
+//  * @brief: static helper function to compare and rank keys in a counters object
+//  * 
+//  * @param arg: an array maintaining counts
+//  * @param key: the key in the counter
+//  * @param value: the value in the counter
+//  * @param NUMOAGES: The number of pages in the directory.
+//  */
+// static void
+// rankPages(void* arg, int key, int value)
+// {
+//   assert(arg != NULL);
+
+//   int** ranks = (int**) arg;
+//   int* keys = ranks[0];
+//   int* values = ranks[1];
+
+//   assert(keys != NULL && values != NULL);
+
+//   const int NUMPAGES = keys[0]; 
+
+//   /* check value against current saved scores */
+//   for (int i=1; i<=NUMPAGES; i++) {
+
+//     /*
+//      * if it ranks better than a current value,
+//      * shift all values after the value by 1, all keys by 1
+//      * and save the key-value pair into the respective arrays.
+//      */
+//     if (value > values[i]) {
+//       for (int j=NUMPAGES; j>i; j--) {
+//         keys[i] = keys[i-1];
+//         values[i] = values[i-1];
+//       }
+//       keys[i] = key;
+//       values[i] = value;
+//     }
+//   }
+// }
+
+// int**
+// index_rank(index_t* index, char* word, char* indexFileName)
+// {
+//   /* make sure parameters are valid */
+//   assert(index != NULL && word != NULL);
+
+
+//   FILE* indexFile;
+//   if ( (indexFile = fopen(indexFileName, "r")) == NULL) {
+//     fprintf(stderr, "Cannot find index file.");
+//     return NULL;
+//   }
+//   // count the number of lines in the file
+//   int NUMLINES = file_numLines(indexFile);
+
+//   // close the file
+//   fclose(indexFile);
+
+
+//   /* check if word exists, get counters */
+//   counters_t* ctrs;
+//   if ( (ctrs = index_find(index, word)) != NULL) {
+//     // create array of ranks
+//     int** ranks = mem_malloc_assert(2*NUMLINES*sizeof(int), "Error allocatinf ranks array in index_rank");
+
+//     /* initialize the array */
+//     ranks[0][0] = NUMLINES;
+//     ranks[1][0] = -1;
+
+//     for (int i=1; i<=NUMLINES; i++) {
+//       ranks[0][i] = 0;
+//       ranks[1][i] = 0;
+//     }
+//     /* build the ranks */
+//     counters_iterate(ctrs, ranks, rankPages);
+
+//     /* return array of ranks */
+//     return ranks;
+//   }
+//   else {
+//     return NULL;
+//   }
+// }
