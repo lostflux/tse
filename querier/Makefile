@@ -11,7 +11,7 @@ VALGRIND= valgrind --leak-check=full --show-leak-kinds=all
 
 # Standard flags 
 CC = gcc
-CFLAGS = -Wall -pedantic -std=c11 -ggdb -I ../libcs50 -I ../common
+CFLAGS = -Wall -pedantic -std=c11 -g -ggdb -I ../libcs50 -I ../common
 
 # Program name
 PROG = querier
