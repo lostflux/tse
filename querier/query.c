@@ -33,7 +33,7 @@
 #include "query.h"
 
 
-/*********** Function Prototypes *********/
+/*********** Static Function Prototypes *********/
 static void dubCounters(void* arg, int docID, int count);
 static void intersect(void* arg, int docID, int count);
 static void unite(void* arg, int docID, int count);
@@ -181,6 +181,11 @@ query_build(index_t* index, char** subQuery)
     return NULL;
   }
 
+  if (subQuery != NULL) {
+    /* free the subQ */
+    mem_free(subQuery);
+  }
+
   /* index is NULL or subQ is NULL; return NULL */
   return NULL;  
 }
@@ -237,6 +242,8 @@ query_intersection(index_t* index, query_t* query, char* nextWord) {
       
       counters_delete(query->ctrs);
       query->ctrs = intersection;
+
+      mem_free(buffer);
 
       query->numWords++;
     }
@@ -312,20 +319,20 @@ query_index(query_t* query, char* pageDirectory)
   }
 
   /* buffer to hold sorted docID-value pairs */
-  int** buffer = mem_calloc_assert(2, 200*sizeof(int), "Error allocating memory in query_index.");
+  int** buffer = mem_calloc_assert(2, MAXPAGES*sizeof(int), "Error allocating memory in query_index.");
 
-  buffer[0] = mem_calloc(100, sizeof(int));
-  buffer[1] = mem_calloc(100, sizeof(int));
+  buffer[0] = mem_calloc(MAXPAGES, sizeof(int));
+  buffer[1] = mem_calloc(MAXPAGES, sizeof(int));
 
   char* sampleURL = mem_calloc(50, sizeof(char));
   strcpy(sampleURL, "sampleURL.com");
-  webpage_t* samplePage = webpage_new(sampleURL, 100, NULL);
+  webpage_t* samplePage = webpage_new(sampleURL, MAXPAGES, NULL);
 
-  query->pages = mem_calloc_assert(200, sizeof(samplePage), "Error allocating memory in query_index");
+  query->pages = mem_calloc_assert(MAXPAGES, sizeof(samplePage), "Error allocating memory in query_index");
 
   webpage_delete(samplePage);
 
-  query->docIDs = mem_calloc_assert(200, sizeof(int), "Error allocating memory in query_index.");
+  query->docIDs = mem_calloc_assert(MAXPAGES, sizeof(int), "Error allocating memory in query_index.");
 
   /* iterate through counters to sort calues. */
   if (query->ctrs != NULL) {

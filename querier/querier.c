@@ -53,8 +53,6 @@ void runQuery(index_t* index, char* pageDirectory, char*** rawQuery);
 
 static void prompt(void);
 
-/* function to log progress */
-// static void logProgress(const int depth, const char* operation, const char* item);
 
 
 /************* GLOBAL CONSTANTS ***************/
@@ -83,7 +81,7 @@ main(int argc, char* argv[])
 
   /* If invalid number of arguments, print usage and error message, exit non-zero. */
   if (argc != 3) {
-    const char* usage = "./indexer [pageDirectory] [indexFilename]\n";
+    const char* usage = "./querier [pageDirectory] [indexFilename]\n";
 
     if (argc < 3) fprintf(stderr, "Too few arguments.\n");
     else fprintf(stderr, "Too many arguments.\n");
@@ -122,6 +120,12 @@ main(int argc, char* argv[])
      * and continue to next iteration.
      */
     if (rawQuery[0] == NULL) {
+      for (int i=1; ; i++) {
+        if (rawQuery[i] == NULL) {
+          break;
+        }
+        mem_free(rawQuery[i]);
+      }
       mem_free(rawQuery);
       continue;
     }
@@ -239,7 +243,7 @@ getQuery(FILE* fp)
     mem_free(rawQuery);
 
     /* init temp tokens array to pass back to caller */
-    char** tokens = mem_calloc_assert(10, 5*sizeof(char), "Error allocating memory for query tokens.\n");
+    char** tokens = mem_calloc_assert(10, 2*sizeof(rawQuery), "Error allocating memory for query tokens.\n");
 
     /* set first word to NULL to let them know an error occurred. */
     tokens[0] = NULL;
@@ -250,6 +254,7 @@ getQuery(FILE* fp)
 
   /* normalize the query */
   normalizeWord(rawQuery);
+  printf("\n\nQuery: %s\n\n", rawQuery);
 
   /* to hold split sub-queries */
   char** tokens = mem_calloc_assert(2*strlen(rawQuery), 5*sizeof(char), "Error allocating memory for query tokens.\n");
@@ -280,7 +285,7 @@ getQuery(FILE* fp)
   }
 
   /* save token if valid */
-  tokens[pos++] = mem_malloc(sizeof(token));
+  tokens[pos++] = mem_malloc(10*sizeof(token));
   strcpy(tokens[pos-1], token);
 
   /* track it as last token */
@@ -298,13 +303,14 @@ getQuery(FILE* fp)
         fprintf(stderr, "Error: '%s' and '%s' not allowed to follow each other in query.\n", lastToken, token);
         mem_free(rawQuery);
         mem_free(lastToken);
+        mem_free(tokens[0]);
         tokens[0] = NULL;
         return tokens;
       }
     }
 
     /* else, copy the word into appropriate position and continue */
-    tokens[pos++] = mem_malloc(sizeof(token));
+    tokens[pos++] = mem_malloc(10*sizeof(token));
     strcpy(tokens[pos-1], token);
     strcpy(lastToken, token);
   }
@@ -318,6 +324,7 @@ getQuery(FILE* fp)
     fprintf(stderr, "Error: '%s' at end of query.\n", lastToken);
     mem_free(rawQuery);
     mem_free(lastToken);
+    mem_free(tokens[0]);
     tokens[0] = NULL;
     return tokens;
   }
@@ -350,7 +357,7 @@ parseQuery(char** query)
 {
   assert(query != NULL);
   /* alloc memory for split query */
-  char*** splitQuery = mem_calloc_assert(2, 2*sizeof(query), "Error allocating memory for parsed query.\n");
+  char*** splitQuery = mem_calloc_assert(2, 100*sizeof(query), "Error allocating memory for parsed query.\n");
   int grouping = 0;
   int pos = 0;
 
@@ -381,7 +388,7 @@ parseQuery(char** query)
     /* general query word: save it */
     else {
       if (splitQuery[grouping] == NULL) {
-        splitQuery[grouping] = mem_malloc(5*sizeof(query));
+        splitQuery[grouping] = mem_malloc(50*sizeof(query));
       }
       splitQuery[grouping][pos++] = mem_calloc(strlen(query[i]) + 5, sizeof(char));
       char* slot = splitQuery[grouping][pos-1];
@@ -447,13 +454,10 @@ runQuery(index_t* index, char* pageDirectory, char*** rawQuery)
       query_t* nextQuery = query_build(index, subQuery);
       query = query_union(query, nextQuery);
     }
-
-    /* free subQ */
-    // mem_free(subQuery);
   }
 
   /* sort the entries in the query results and load relevant data
-     print reuslts
+     print results
      and delete the query */
   if (query != NULL) {
     query_index(query, pageDirectory);
