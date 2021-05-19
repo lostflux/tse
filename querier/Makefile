@@ -72,7 +72,6 @@ fuzztest: fuzzquery.o $(LLIBS)
 	$(CC) $(CFLAGS) $^ -o fuzztest
 	make $(PROG)
 
-
 # clean-up target
 clean:
 	rm -f core *core.*
@@ -80,7 +79,7 @@ clean:
 	rm -f $(FUZZTEST) *~ *.o
 
 
-# check ./indexer for memory usage and leaks
+# check ./querier for memory usage and leaks
 # usually takes a while to complete.
 memcheck:
 	make all
