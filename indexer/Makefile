@@ -53,8 +53,6 @@ indexer.o: indexer.c $(LLIBS)
 # test run (rebuilds crawler and generates files)
 test: indexer.c $(LLIBS) 
 	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indexer
-	printf "\nBuilding crawler directories... ... ...\n\n"
-	make test -C ../crawler
 	bash -v ./testing.sh
 
 

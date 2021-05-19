@@ -8,7 +8,7 @@
 #
 # Amittai Wekesa, April 2021
 
-# build directories
+# build directories if they do not exist.
 if ! [[ -r ../data/output/letters-0/.crawler ]] ; then
   mkdir -p ../data/test/{letters-0,letters-10,toscrape-0,toscrape-1,wikipedia-0,wikipedia-1}
 fi;

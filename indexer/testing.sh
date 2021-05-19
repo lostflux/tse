@@ -27,6 +27,13 @@ In turn, this script creats *.index files in the same directory ../data/output.
 # make all -C ../crawler
 # bash -v ../crawler/testing.sh
 
+# check if crawler directories do not exist, build them.
+if ! [[ -r ../data/output/letters-0/.crawler ]] ; then
+  # if not, rebuild.
+  printf "\nBuilding crawler directories... ... ...\n\n"
+  make test -C ../crawler
+fi;
+
 
 # incorrect usage
 

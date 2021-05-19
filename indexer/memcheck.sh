@@ -23,6 +23,13 @@ To generate these directories and their contents, run the crawler test script "t
 In turn, this script creats *.index files in the same directory ../data/output.
 '
 
+# check if crawler directories do not exist, build them.
+if ! [[ -r ../data/output/letters-0/.crawler ]] ; then
+  # if not, rebuild.
+  printf "\nBuilding crawler directories... ... ...\n\n"
+  make test -C ../crawler
+fi;
+
 VALGRIND="valgrind --leak-check=full --show-leak-kinds=all"
 
 # incorrect usage
