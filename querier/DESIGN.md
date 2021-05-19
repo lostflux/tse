@@ -1,4 +1,6 @@
-# CS50 TSE Crawler
+# CS50 TSE Querier
+
+## DESIGN
 
 Author: Amittai J. Wekesa (github: @siavava)
 
@@ -31,6 +33,9 @@ As described in the [Requirements Spec](REQUIREMENTS.md), the querier's only int
 `pageDirectory` is the pathname to a directory created by the [Crawler](../crawler/README.md).
 `indexFilename` ia the path to a file created by the [Indexer](../indexer/README.md).
 
+Furthermore, during runtime the Querier reads in queries from the user through a `FILE` such as `stdin` and processes them, giving feedback through stdout. 
+The querier conditionally prints out prompts if the source `FILE` stream is a terminal. 
+
 ***
 
 ## Inputs and outputs
@@ -55,7 +60,7 @@ As described in the [Requirements Spec](REQUIREMENTS.md), the querier's only int
 
 3. The Querier prints to `stderr` whenever an exception encountered.
 
-4. On termination, the Querier returns a code dependent on the condition that prompted an exit:
+4. On termination, the Querier returns an exit code dependent on the condition that prompted an exit:
 
 ***
 
@@ -63,16 +68,22 @@ As described in the [Requirements Spec](REQUIREMENTS.md), the querier's only int
 
 The Querier is composed of the following functions:
 
- 1. *main*, which parses arguments, ascertains that the correct number of arguments were received, and initializes other modules.
- 2. *parseArgs*, which receives allocated memory from main and saves therein the values passed from `stdin`.
- 3. *buildIndex*, which rebuilds the `index` structure from the index file.
- 4. *getQuery*, which prompts user for queries and normalizes them.
- 5. *query*, which checks for existence of the query in the index.
- 6. *quit*, which cleans up and exits the application.
+ 1. `main`: which parses arguments, ascertains that the correct number of arguments were received, and initializes other modules.
+ 2. `parseArgs`: receives allocated memory from main and the argument vector passed in from `stdin` . It checks that provided directories/files are valid and saves them to the passed in memory. In case of an error (such as a non-existent file), it frees the passed in memory before exiting with an appropriate error code. `stdin`.
+ 3. `getQuery`: receives a pointer to a valid `FILE` (could be `stdin`) and reads in a query sentence. It stores the words in an array and returns a pointer to that array.
+ 4. `parseQuery`: does the work of interpreting queries passed in from `stdin`.
+ 5. `runQuery`: receives an array of split-up subqueries from `parseQuery` and processes them as appropriate.
+ 6. `prompt`: conditionally prompts the user for new query promps if the input stream is a terminal.
+
 
 And some helper modules that provide data structures:
 
- 1. *index* of pages and word occurrences.
+ 1. `query`: handles the work of finding results and tracking them, creating unions, intenrsections, handling non-existent words, printing query results, etc.
+ 2. `index`: represents the actual index of words from webpages wherein we search for matches.
+ 3. `pagedir`: handles essential file IO for the QUerier.
+ 4. `word`: provides functionality for normalizing words in a passed-in query.
+ 5. `webpage`: provides a manipulateable representation of a webpage.
+ 6. `mem`: provides guarded memory alloc and free functionalities, including the ability to check that memory allocated successfully.
 
 ***
 
@@ -81,67 +92,44 @@ And some helper modules that provide data structures:
 The querier will run as follows:
 
 ```pseudocode
-confirm correct number of arguments was received from command line
-parse input and validate Parameters
-reconstruct the index from specified file
-prompt user for query
-while valid query received,
-  process the query
-  prompt for new query
-
-  parse the command line, validate parameters, initialize other modules
-  add seedURL to the bag of webpages to crawl, marked with depth=0
-  add seedURL to the hashtable of URLs seen so far
-  while there are more webpages in the bag:
-      extract a webpage (URL,depth) item from the bag
-      pause for one second
-      use pagefetcher to retrieve a webpage for that URL
-      use pagesaver to write the webpage to the pageDirectory with a unique document ID
-      if the webpage depth is < maxDepth, explore the webpage to find the links it contains:
-        use pagescanner to parse the webpage to extract all its embedded URLs
-        for each extracted URL:
-          normalize the URL (per requirements spec)
-          if that URL is internal (per requirements spec):
-            try to insert that URL into the *hashtable* of URLs seen;
-              if it was already in the table, do nothing;
-              if it was added to the table:
-                  create a new webpage for that URL, marked with depth+1
-                  add that new webpage to the bag of webpages to be crawled
+Start
+confirm correct number of arguments was received from command line.
+call parseArgs to validate and save arguments.
+load the index from provided index file.
+prompt use for query.
+while *some* query received:
+  parse the query.
+  run the query.
+  free the query.
+  prompt for next query.
+ 
+on exit of query loop, delete all instance variables and quit.
 ```
-
-Notice that our pseudocode says nothing about the order in which it crawls webpages.
-Recall that our *bag* abstract data structure explicitly denies any promise about the order of items removed from a bag.
-That's ok.
-The result may or may not be a Breadth-First Search, but for the crawler we don't care about the order as long as we explore everything within the `maxDepth` neighborhood.
-
-The crawler completes and exits when it has nothing left in its *bag* - no more pages to be crawled.
-The maxDepth parameter indirectly determines the number of pages that the crawler will retrieve.
+***
 
 ## Major data structures
 
 Helper modules provide all the data structures we need:
 
-- *bag* of webpage (URL, depth) structures
-- *hashtable* of URLs
-- *webpage* contains all the data read for a given webpage, plus the URL and the depth at which it was fetched
+ 1. `query`: handles the work of finding results and tracking them, creating unions, intenrsections, handling non-existent words, printing query results, etc.
+ 2. `index`: represents the actual index of words from webpages wherein we search for matches.
+ 3. `webpage`: provides a manipulateable representation of a webpage.
+
+***
 
 ## Testing plan
 
-We've established a '[playground](http://cs50tse.cs.dartmouth.edu/tse/)' for CS50 crawlers to explore.
+I've written testing scripts for testing the querier and the query module. Due to their coupled nature, it was most effective to test the two as a unit.
 
-A sampling of tests that should be run:
+Testing is done using the [fuzzquery](./fuzzquery.c) to generate random queries based on words in the relevant index file and pipe them through the querier.
 
-1. Test the program with various forms of incorrect command-line arguments to ensure that its command-line parsing, and validation of those parameters, works correctly.
+A sampling of tests that are run:
 
-2. Crawl a simple, closed set of cross-linked web pages like [letters](http://cs50tse.cs.dartmouth.edu/tse/letters/), at depths 0, 1, 2, or more.
-Verify that the files created match expectations.
+1. Test the querier with various forms of incorrect command-line arguments to ensure that its command-line parsing, and validation of those parameters, works correctly.
 
-3. Repeat with a different seed page in that same site.
-If the site is indeed a graph, with cycles, there should be several interesting starting points.
+2. Query a simple index with only a handful of pages. This is handy to quickly pin down erratic behavior. Verify that the query results match expectations.
 
-4. Point the crawler at one of our bigger playgrounds.
-Explore at depths 0, 1, 2, from various starting pages.
-(It takes a long time to run at depth 2 or higher!)
-Verify that the files created match expectations.
+3. Repeat with deeper indexes with hundreds, maybe thousands of words and more pages. Make sure the querier handles them correctly and that the allocated memory is in fact sufficient and doesn't result in `stack smashing` and other segmentation fault errors.
 
-5. When you are confident that your crawler runs well, test it with a greater depth - but be ready to kill it if it seems to be running amok.
+4. Finally, run memory tests on all the different scenarios to ensure no memory leaks. Corner cases include, but are not limited to, the instances when an argument is detected as invalid *after* some variables have already been allocated---are the allocated variables freed?
+

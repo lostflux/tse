@@ -5,6 +5,8 @@
 # Flag to print indexer progress
 TESTFLAGS=-DQUICKTEST
 
+FUZZTEST = fuzztest
+
 # Testing Programs
 # INDEXTEST=indextest
 VALGRIND= valgrind --leak-check=full --show-leak-kinds=all
@@ -27,7 +29,7 @@ LLIBS = ../common/common.a ../libcs50/libcs50.a
 all: 
 	make -C ../common
 	make $(PROG)
-# make querytest
+	make $(FUZZTEST)
 	
 # program  (querier)
 $(PROG): $(OBJS) $(LLIBS) 	
@@ -40,6 +42,8 @@ querier.o: querier.c query.o $(LLIBS)
 
 query.o: query.h
 
+fuzztest.o: fuzzquery.c
+
 
 # rebuild common library
 ../common/common.a:
@@ -50,38 +54,34 @@ query.o: query.h
 # .PHONY make target
 .PHONY: clean test memcheck clean
 
+test:
+	make all
+	bash -v ./testing.sh
 
-# test run (rebuilds crawler and generates files)
-test: querier.c query.o $(LLIBS) 
+memcheck:
+	make all:
+	bash -v ./memcheck.sh
+
+# quick test
+quicktest: querier.c query.o $(LLIBS) 
 	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o querier
-	# ./querier
-	# printf "\nBuilding crawler directories... ... ...\n\n"
-	# make test -C ../crawler
-	# bash -v ./testing.sh
+	./fuzztest ../data/output/toscrape-1.index 100 2021 | ./querier
 
-
-# indextest -- unit test for index data-structure
-indextest: indextest.c $(LLIBS)
-	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indextest
-	bash -v ./indextest.sh
+#fuzztest
+fuzztest: fuzzquery.o $(LLIBS)
+	$(CC) $(CFLAGS) $^ -o fuzztest
+	make $(PROG)
 
 
 # clean-up target
 clean:
 	rm -f core *core.*
 	rm -f $(PROG) *~ *.o
-	# rm -f $(INDEXTEST) *~ *.o
+	rm -f $(FUZZTEST) *~ *.o
 
 
 # check ./indexer for memory usage and leaks
 # usually takes a while to complete.
-memcheck: indexer.c $(LLIBS)
-	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indexer
+memcheck:
+	make all
 	bash -v ./memcheck.sh
-
-
-# check ./indextest for memory usage and leaks.
-# usually takes a while to complete.
-indextest_memcheck: indextest.c $(LLIBS)
-	$(CC) $(CFLAGS) $(TESTFLAGS) $^ -o indextest
-	bash -v ./indextest_memcheck.sh
