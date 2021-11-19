@@ -23,7 +23,7 @@ all: $(PROG) $(LLIBS)
 $(PROG): $(OBJS) $(LLIBS) 	
 	$(CC) $(CFLAGS) $^ -o $@
 
-crawler.o: crawler.c $(LLIBS)
+crawler.o: crawler.c -DAPPTEST $(LLIBS)
 
 ../common/common.a:
 	make clean -C ../common
@@ -32,7 +32,7 @@ crawler.o: crawler.c $(LLIBS)
 .PHONY: clean test valgrind clean
 
 test: crawler.c $(LLIBS) 
-	$(CC) $(CFLAGS) $^ -o crawler
+	$(CC) $(CFLAGS) -DAPPTEST $^ -o crawler
 	bash -v ./testing.sh
 
 clean:
